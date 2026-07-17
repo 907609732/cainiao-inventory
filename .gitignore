@@ -1,0 +1,12 @@
+node_modules/
+packages/*/dist/
+release/
+.DS_Store
+*.log
+*.tgz
+*.zip
+.env
+.env.*
+!*.example
+test-results/
+coverage/

@@ -1,0 +1,28 @@
+{
+  "name": "cainiao-inventory-codex",
+  "version": "1.0.0",
+  "description": "Validate and schedule Cainiao inventory exports with secure DingTalk delivery.",
+  "author": {
+    "name": "907609732",
+    "url": "https://github.com/907609732"
+  },
+  "homepage": "https://github.com/907609732/cainiao-inventory-codex",
+  "repository": "https://github.com/907609732/cainiao-inventory-codex",
+  "license": "MIT",
+  "keywords": ["cainiao", "inventory", "dingtalk", "automation", "macos"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "菜鸟库存自动化",
+    "shortDescription": "抓取、验真并定时发送菜鸟库存日报",
+    "longDescription": "通过安全向导完成菜鸟登录与钉钉配置，严格校验每日库存后再发送，并由 macOS launchd 在中国时间 22:00 自动运行。",
+    "developerName": "907609732",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "检查并配置我的菜鸟库存自动化。",
+      "抓取今天的菜鸟库存，验真后发送钉钉。",
+      "查看最近一次菜鸟库存任务为什么失败。"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

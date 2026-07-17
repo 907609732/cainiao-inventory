@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cainiaoInventory": {
+      "title": "菜鸟库存自动化",
+      "description": "安全配置、抓取、验真、发送和调度菜鸟库存日报。",
+      "cwd": ".",
+      "command": "/bin/bash",
+      "args": ["./scripts/start-mcp.sh"]
+    }
+  }
+}
