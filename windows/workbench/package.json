@@ -1,6 +1,6 @@
 {
   "name": "wucheng-ecommerce-erp-v2",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "五成电子商务工作台统一源码与云仓组件",
   "author": "五成电子商务集团",
   "private": true,
@@ -72,8 +72,5 @@
     "turbo": "2.11.10",
     "yazl": "3.3.1"
   },
-  "workspaces": [
-    "tooling/build-units/*"
-  ],
   "packageManager": "npm@11.16.0"
 }

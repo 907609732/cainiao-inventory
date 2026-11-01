@@ -1,5 +1,17 @@
 # Windows 工作台云仓扩展
 
+## 独立 Windows 安装器
+
+`workbench/` 也可直接构建云仓独立安装器，无需先启动 ERP 预览。
+
+```powershell
+cd windows/workbench
+npm ci --workspaces=false
+npm run warehouse:build -- --publish never
+```
+
+产物在 `workbench/dist/`。安装器及更新清单发布到 `907609732/cainiao-inventory`，不上传本地账本、登录资料或构建凭据。未完成真实平台和正式数据迁移验收的版本使用 GitHub Pre-release。
+
 `workbench/` 保存从五成 ERP 迁出的完整 Windows 云仓源码，包括库存、月度销量、补货、设置、提醒及业务适配器。现有 macOS Codex 插件保持原目录和构建入口。
 
 Windows 扩展使用工作台已有的签名组件格式，模块 ID 为 `warehouse`，复用工作台 Electron。主包只保留云仓入口和安装能力；库存浏览器随扩展按需下载。用户在工作台中点击“下载并安装”后才开始准备组件。

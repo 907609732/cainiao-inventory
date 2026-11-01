@@ -10,3 +10,6 @@ release/
 !*.example
 test-results/
 coverage/
+windows/workbench/dist/
+windows/workbench/build/private/
+windows/workbench/data/
