@@ -1,6 +1,6 @@
 # 当前软件架构
 
-本文对应 Windows 云仓 0.9.3。macOS Codex 插件见 [macOS 架构](macos-architecture.md)。
+本文对应 Windows 云仓 0.9.3，本仓库只维护 Windows 版本。
 
 ## Windows 主链路
 
@@ -20,6 +20,6 @@
 
 旧发票模块缓存、独立 ERP 客户端和旧客户端迁移目录已从当前源码清理。与现有工作台对接的签名、请求验证及服务适配仍保留，不能仅因名称含工作台而删除。
 
-## 平台区分
+## 开发入口
 
-`packages/core`、`packages/mcp` 和 `plugins` 是 macOS Codex 插件源码，使用 Keychain 和 launchd。Windows 桌面程序使用 Electron 和 Windows 安全存储；两端版本号、入口及验收结果分别记录。
+根目录的启动、测试和构建命令统一转发到 `windows/workbench`。安装依赖、准备 Electron 和源码启动方法见 [Windows 说明](../windows/README.md)。Windows 桌面程序使用 Electron 和 Windows 安全存储。

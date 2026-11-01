@@ -1,4 +1,4 @@
-name: ci
+name: Windows CI
 
 on:
   push:
@@ -6,17 +6,18 @@ on:
 
 jobs:
   test:
-    strategy:
-      matrix:
-        os: [macos-13, macos-14]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows/workbench
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.23.1
+          node-version: 24
           cache: npm
-      - run: npm ci --registry=https://registry.npmjs.org
+          cache-dependency-path: windows/workbench/package-lock.json
+      - run: npm ci --workspaces=false --no-audit --no-fund
+      - run: node node_modules/electron/install.js
       - run: npm test
-      - run: npm run test:runtime
-      - run: bash scripts/validate-release.sh
+      - run: npm run test:ui

@@ -46,9 +46,9 @@ npm run dev
 | --- | --- |
 | `windows/workbench` | 当前 Windows 云仓源码、测试、文档和安装器配置 |
 | `scripts/build-windows.mjs` | 对接现有 ERP 工具链的签名扩展构建入口 |
-| `packages`、`plugins` | 独立 macOS Codex 插件源码，说明见 [macOS 文档](docs/macos-plugin.md) |
+| `docs` | 当前版本、架构及验收说明 |
 
-macOS 插件的源码版本号为 1.0.0，与 Windows 0.9.3 分别管理；本仓库当前公开 Release 是 Windows 版本，不能将两个平台的安装和调度方式混用。
+本仓库仅维护 Windows 菜鸟云仓，版本号为 0.9.3。根目录的启动、测试和构建命令均转发到 Windows 源码。
 
 ## License
 

@@ -34,5 +34,3 @@ npm run warehouse:build -- --publish never
 ```
 
 首次安装依赖和准备 Electron 的命令见 [Windows 开发说明](../windows/README.md)。重新构建会产生新文件，应重新核对摘要，不能复用本次发布的校验值。
-
-macOS 插件的独立验收清单见 [macOS 验收](macos-acceptance.md)。
