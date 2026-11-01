@@ -175,3 +175,7 @@ legend { padding: 0 8px; font-weight: 700; color: var(--lt-ink); }
 .notification-channel summary { cursor: pointer; font-weight: 700; }
 .notification-channel .form-grid { margin-top: 16px; }
 .notification-channel .check { margin-top: 12px; }
+
+.date-exception-dialog { width: min(600px,calc(100vw - 48px)); border: 1px solid var(--lt-line); border-radius: var(--lt-radius-panel); padding:24px; color:var(--lt-ink); background:var(--lt-surface); }
+.date-exception-dialog::backdrop { background:#0006; }
+.date-exception-summary { white-space:pre-wrap; font-weight:600; line-height:1.9; }

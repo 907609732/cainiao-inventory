@@ -54,6 +54,7 @@
 
     <section class="actions panel">
       <button class="primary btn" id="runNow">立即同步并发送</button>
+      <button class="danger hidden btn" id="dateExceptionSend" type="button">特殊发送日期异常库存</button>
       <button class="danger hidden btn" id="stopTask">强制中止当前任务</button>
     </section>
 
@@ -310,6 +311,13 @@
     </div>
   </main>
 <script src="../../node_modules/gridjs/dist/gridjs.production.min.js"></script>
+  <dialog id="dateExceptionDialog" class="date-exception-dialog" aria-labelledby="dateExceptionTitle">
+    <h2 id="dateExceptionTitle">确认发送日期异常库存</h2>
+    <p id="dateExceptionSummary" class="date-exception-summary"></p>
+    <p>此文件日期偏旧，可能不代表最新库存。特殊发送仅作参考，不会导入正常库存，也不会把同步标记为成功。</p>
+    <p>收件报告将明确标注期望日期、实际日期和“日期异常”。请确认接收渠道与数据风险。</p>
+    <div class="actions"><button class="btn" id="dateExceptionCancel" type="button">取消，不发送</button><button class="danger btn" id="dateExceptionConfirm" type="button">我已了解风险，确认发送</button></div>
+  </dialog>
   <script src="../../node_modules/echarts/dist/echarts.min.js"></script>
   <script src="renderer.js"></script>
   <script type="module" src="../shared/loading-screen-auto.mjs"></script>

@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("inventoryApp", {
   stopTask: () => ipcRenderer.invoke("task:stop"),
   getState: () => ipcRenderer.invoke("task:state"),
   getLogs: () => ipcRenderer.invoke("logs:get"),
+  previewDateException: () => ipcRenderer.invoke('inventory:date-exception-preview'),
+  sendDateException: payload => ipcRenderer.invoke('inventory:date-exception-send',payload),
   getInventory: () => ipcRenderer.invoke("inventory:get"),
   getMonthlySales: (filters) => ipcRenderer.invoke("monthly-sales:get", filters),
   syncMonthlySales: (payload) => ipcRenderer.invoke("monthly-sales:sync", payload),

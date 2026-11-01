@@ -585,6 +585,8 @@ async function synchronizeInventory(daily, runId) {
     ? findLatestPriorCainiaoFile({ dir: downloadDir, currentFile: file, sourceDate: preliminary.sourceDate })
     : '';
   const validation = validateCainiaoInventoryFile({ file, expectedSourceDate: strictSourceDate, previousFile, minRows: 10 });
+  validation.fileHash=createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  validation.previousFileHash=previousFile?createHash('sha256').update(fs.readFileSync(previousFile)).digest('hex'):'';
   recordInventoryValidation(validation);
   const validationId=Number(getDb().prepare("SELECT MAX(id) AS id FROM inventory_data_validations WHERE warehouse_id='cainiao'").get().id);
   daily.updateRun(runId, {sourceDate:validation.sourceDate,validationId,rowCount:validation.rowCount,totalQuantity:validation.totalQuantity,validationStatus:validation.ok?'success':'failed',validatedAt:new Date().toISOString()});

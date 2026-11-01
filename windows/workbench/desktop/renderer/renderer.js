@@ -7,6 +7,7 @@ document.body.classList.toggle('managed-cloud', managedWarehouse);
 document.getElementById('backHome').textContent = managedWarehouse ? '返回工作台' : '关闭云仓窗口';
 if (managedWarehouse) document.querySelector('#maintenanceCard .settings-card-heading p').textContent = '登录状态、云仓数据与日志目录。模块更新和后台服务统一在工作台管理。';
 let configured = false;
+let dateExceptionPreview = null;
 let inventoryGrid = null;
 let inventoryReport = null;
 let inventoryFilter = "all";
@@ -423,7 +424,7 @@ async function loadMonthlySales() {
 
 function applyState(state) {
   const running = Boolean(state?.running);
-  const runningNames = { login: "正在登录", sync: "正在同步库存", "monthly-sales": "正在同步月销量", "monthly-backfill": "正在补抓历史销量" };
+  const runningNames = { "date-exception": "正在特殊发送", login: "正在登录", sync: "正在同步库存", "monthly-sales": "正在同步月销量", "monthly-backfill": "正在补抓历史销量" };
   byId("runState").textContent = running ? (runningNames[state.runningKind] || "正在运行") : "空闲";
   const nextRuns = [state?.nextScheduledRun, state?.nextMonthlyScheduledRun].filter(Boolean).sort();
   byId("nextRun").textContent = formatDate(nextRuns[0]);
@@ -431,7 +432,9 @@ function applyState(state) {
   byId("statusBadge").className = `status ${running ? "running" : (configured ? "ready" : "")}`;
   byId("runNow").disabled = running;
   byId("refreshLogin").disabled = running;
-  byId("stopTask").classList.toggle("hidden", !running);
+  byId("stopTask").classList.toggle("hidden", !running || Boolean(state?.dateExceptionSending));
+  byId("dateExceptionSend").classList.toggle("hidden", running || !state?.dateExceptionAvailable);
+  byId("dateExceptionSend").disabled = running;
   byId("stopTask").disabled = !running || Boolean(state?.stopRequested);
   byId("stopTask").textContent = state?.stopRequested ? "正在中止…" : "强制中止当前任务";
   for (const id of ["syncDueMonthlySales", "backfillMonthlySales", "emptyBackfillMonthlySales"]) byId(id).disabled = running;
@@ -686,6 +689,26 @@ byId("checkUpdate").addEventListener("click", async () => {
   catch (error) { appendLog({ line: `检查更新失败：${error.message}` }); }
 });
 byId("installUpdate").addEventListener("click", () => api.installUpdate());
+byId('dateExceptionSend').addEventListener('click',async()=>{
+  byId('dateExceptionSend').disabled=true;
+  try{dateExceptionPreview=await api.previewDateException();
+    const p=dateExceptionPreview;
+    const names={dingtalk:'钉钉',feishu:'飞书',wecom:'企业微信',email:'邮箱',telegram:'Telegram'};
+    byId('dateExceptionSummary').textContent='期望来源日期：'+p.expectedSourceDate+'\n实际来源日期：'+p.sourceDate+'\n数据行数：'+p.rowCount+'，库存合计：'+p.totalQuantity+'\n发送渠道：'+p.channels.map(id=>names[id]||id).join('、');
+    byId('dateExceptionDialog').showModal();
+  }catch(error){appendLog({line:'无法特殊发送：'+error.message});}
+  finally{applyState(await api.getState());}
+});
+byId('dateExceptionCancel').addEventListener('click',()=>{dateExceptionPreview=null;byId('dateExceptionDialog').close();});
+byId('dateExceptionDialog').addEventListener('cancel',()=>{dateExceptionPreview=null;});
+byId('dateExceptionConfirm').addEventListener('click',async()=>{
+  const p=dateExceptionPreview;if(!p)return;dateExceptionPreview=null;
+  byId('dateExceptionConfirm').disabled=true;byId('dateExceptionDialog').close();
+  try{const result=await api.sendDateException({token:p.token,confirmed:true});
+    appendLog({line:result.accepted?'日期异常库存特殊发送完成；正常同步状态未改变。':'特殊发送未全部受理，请核对服务商记录，勿重复发送。'});
+  }catch(error){appendLog({line:'特殊发送未完成：'+error.message});}
+  finally{byId('dateExceptionConfirm').disabled=false;applyState(await api.getState());}
+});
 api.onState(applyState);
 api.onLog(appendLog);
 api.onUpdateState(applyUpdateState);

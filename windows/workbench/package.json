@@ -31,7 +31,8 @@
     "docs:features": "node scripts/export-feature-help.mjs",
     "test:feature-help": "node --test tests/feature-help-content.test.mjs",
     "docs:screenshots": "node tests/capture-demo-ui.mjs",
-    "test:ui:notifications": "node tests/notification-ui.mjs"
+    "test:ui:notifications": "node tests/notification-ui.mjs",
+    "test:ui:date-exception": "node tests/date-exception-ui.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",

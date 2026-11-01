@@ -22,6 +22,7 @@ jobs:
       - run: npm test
       - run: npm run test:ui
       - run: npm run test:ui:notifications
+      - run: npm run test:ui:date-exception
       - name: Verify explicit hosted-mode compatibility
         run: |
           $env:WAREHOUSE_TEST_MANAGED = '1'

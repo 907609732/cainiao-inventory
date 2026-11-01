@@ -1,3 +1,4 @@
+import {createDateExceptionService} from '../core/date-exception-send.mjs';
 import {validateNotifications,normalizeNotificationSettings} from './shared/notification-settings.mjs';
 import {sendNotificationReport} from '../core/notifications.js';
 import { app, BrowserWindow, ipcMain, safeStorage, shell, dialog } from "electron";
@@ -98,6 +99,9 @@ if (!singleInstance) app.quit();
 
 let mainWindow = null;
 let runningChild = null;
+let dateExceptionSending = false;
+let dateExceptionService;
+let dateExceptionDirectory = "";
 let runningKind = "";
 let scheduleTimer = null;
 let nextScheduledRun = null;
@@ -337,6 +341,26 @@ function appendLog(message, level = "info") {
   mainWindow?.webContents.send("inventory:log", { line, level });
 }
 
+function exceptionalInventoryService() {
+  // Keep this directory identical to core/sync-cainiao-inventory.js.
+  const directory=path.join(appDataDir(),'downloads');
+  if(!dateExceptionService||dateExceptionDirectory!==directory){
+    dateExceptionDirectory=directory;
+    dateExceptionService=createDateExceptionService({databasePath:inventoryDatabasePath(),downloadDir:directory,auditPath:path.join(appDataDir(),'state','date-exception-sends.jsonl'),expectedDate:()=>process.env.CAINIAO_EXPECTED_SOURCE_DATE||process.env.CAINIAO_INVENTORY_QUERY_DATE||expectedInventoryDate(),getTargets:async()=>({settings:readSettings(),secrets:await readSecrets()}),getTargetRevision:()=>createHash("sha256").update(JSON.stringify([settingsPath(),secretsPath()].map(file=>fs.existsSync(file)?createHash("sha256").update(fs.readFileSync(file)).digest("hex"):""))).digest("hex"),send:sendNotificationReport});
+  }
+  return dateExceptionService;
+}
+function dateExceptionAvailable() {
+  if(workbenchManaged||agentManaged||runningChild||runningTaskPromise||dateExceptionSending)return false;
+  try{return exceptionalInventoryService().available();}catch{return false;}
+}
+function assertExceptionalSendAllowed(event) {
+  if(event.sender!==mainWindow?.webContents)throw Error('无权特殊发送');
+  if(workbenchManaged||agentManaged)throw Error('托管模式请从中央任务结果页复核');
+  if(runningChild||runningTaskPromise||dateExceptionSending)throw Error('已有任务正在运行');
+  if(fs.existsSync(path.join(app.getPath('userData'),'.workbench-maintenance.json')))throw Error('账本正在维护，不能特殊发送');
+  process.env.ERP_DATA_DIR=path.dirname(inventoryDatabasePath());
+}
 function emitState(extra = {}) {
   let monthlySalesDueMonth = "";
   try {
@@ -347,8 +371,10 @@ function emitState(extra = {}) {
   const payload = {
     schedulingOwner:testLedger?'test-disabled':businessOnly?'business':'legacy',
     legacyAutomaticRemindersEnabled:false,
-    running: Boolean(runningChild),
-    runningKind,
+    running: Boolean(runningChild) || dateExceptionSending,
+    dateExceptionSending,
+    dateExceptionAvailable: dateExceptionAvailable(),
+    runningKind:dateExceptionSending?'date-exception':runningKind,
     stopRequested: stopRequestedPid !== null,
     nextScheduledRun: nextScheduledRun?.toISOString() || "",
     nextMonthlyScheduledRun: nextMonthlyScheduledRun?.toISOString() || "",
@@ -511,6 +537,7 @@ async function startProcess(kind, trigger = "manual", options = {}, context = {}
     runningChild = null;
     runningKind = "";
     if (cancelled) stopRequestedPid = null;
+    if (runningTaskPromise === completion) runningTaskPromise = null;
     emitState({ lastResult: cancelled ? "cancelled" : (success ? "success" : "failed"), lastFinishedAt: new Date().toISOString() });
     if (success && kind === "sync") mainWindow?.webContents.send("inventory:updated");
     if (success && ["monthly-sales", "monthly-backfill"].includes(kind)) mainWindow?.webContents.send("monthly-sales:updated");
@@ -523,7 +550,6 @@ async function startProcess(kind, trigger = "manual", options = {}, context = {}
       finishedAt: new Date().toISOString(),
       logs: recentLog.slice(logStart)
     });
-    if (runningTaskPromise === completion) runningTaskPromise = null;
     scheduledTaskQueue = queueAfterTaskResult(scheduledTaskQueue, { success, cancelled });
     if (success && !cancelled) queueMicrotask(() => runNextScheduledTask());
   });
@@ -968,6 +994,7 @@ ipcMain.handle("secrets:get-editable", async (event) => {
   return Object.fromEntries(EDITABLE_SECRET_FIELDS.map((key) => [key, String(secrets[key] || "")]));
 });
 ipcMain.handle("settings:save", async (_event, payload = {}) => {
+  if(dateExceptionSending)throw Error("特殊发送期间不能修改配置，请稍后保存");
   const currentSecrets = await readSecrets();
   const incomingSecrets = payload.secrets || {};
   const mergedSecrets = { ...currentSecrets };
@@ -986,6 +1013,7 @@ ipcMain.handle("settings:save", async (_event, payload = {}) => {
   return publicSettings();
 });
 ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
+  if(dateExceptionSending)throw Error("特殊发送期间不能修改配置，请稍后保存");
   const section = String(payload.section || "");
   if(section==='runtime')throw Error(workbenchManaged ? '连接与运行角色由工作台 Tailscale 设置统一管理' : '独立版使用本机运行模式，无需配置远程运行角色');
   const validators = {
@@ -1020,6 +1048,19 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
   const sectionNames = { runtime: "运行模式", account: "菜鸟账号", robot: "通知渠道", automation: "自动任务", updates: "在线升级" };
   appendLog(`${sectionNames[section]}设置已保存。`, "success");
   return publicSettings();
+});
+ipcMain.handle('inventory:date-exception-preview',async event=>{
+  assertExceptionalSendAllowed(event);
+  return exceptionalInventoryService().preview();
+});
+ipcMain.handle('inventory:date-exception-send',async(event,payload)=>{
+  assertExceptionalSendAllowed(event);
+  const release=acquireTaskLock('date-exception-send');
+  dateExceptionSending=true;emitState();
+  try{const result=await exceptionalInventoryService().send(payload);
+    appendLog(result.accepted?'日期异常库存已特殊发送；正常校验仍为失败，库存未导入。':'日期异常特殊发送未全部受理，请核对各渠道记录。',result.accepted?'success':'error');
+    return result;
+  }finally{dateExceptionSending=false;release();emitState();}
 });
 ipcMain.handle("task:run", () => runtimeMode() === "client"
   ? remoteRequest("/api/v1/jobs", { method: "POST", body: { type: "sync" } })
