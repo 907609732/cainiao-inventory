@@ -1,6 +1,6 @@
 # 菜鸟云仓 0.9.6：独立软件界面整理
 
-状态：源码已更新，候选安装包已构建，尚未发布到 Releases。
+[下载 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.6/CainiaoWarehouse-Setup-0.9.6-x64.exe) · [发布附件与校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.6)
 
 - 启动画面、窗口标题和页面品牌统一为“菜鸟云仓”。
 - 设置页说明账号、同步计划、钉钉提醒和本机软件维护；独立启动不显示工作台连接配置卡片。
@@ -13,7 +13,13 @@
 
 141 项回归测试、独立与显式托管界面测试、打包后的独立界面测试及 Windows CI 通过。测试覆盖四个页面与全部操作说明、技术原理弹窗，检查独立界面不出现工作台依赖文案。
 
-本次 Sandbox 共存复测在安装原工作台的第一步，被系统应用控制策略阻止，尚未进入云仓安装步骤。因此不能将 0.9.5 的历史共存结果当作 0.9.6 安装验收，也暂不发布 0.9.6 安装包。现有 0.9.5 Release 保持不变。
+安装共存验收已通过：[完整测试运行](https://github.com/907609732/cainiao-inventory/actions/runs/41329593845)。在两台一次性 GitHub Windows Server 2025 环境中安装真实工作台 0.11.4，分别测试全新安装 0.9.6 和从独立云仓 0.9.5 升级。两条路径均完成重复安装、两款软件同时启动、单独卸载云仓和重新打开工作台。
+
+每次安装均核对工作台主程序与 app.asar 摘要、两个实际快捷方式的目标和文件摘要、卸载项、数据位置记录和测试文件；均保持不变。云仓使用独立程序目录、配置目录及卸载项；升级和重复安装保留虚构测试文件。详细回执见附件 `release-validation.json`。
+
+本机 Windows 11 Sandbox 的 Smart App Control 拦截了未签名的原工作台安装器，复制到本地或联网也未解除拦截。本次未关闭安全策略，改用独立 Windows 环境完成安装验收。另修正测试脚本对非 ANSI 快捷方式名称的读取问题，改用 Windows Shell 属性并增加 Unicode 回归检查。
+
+安装器仍未签名，不宣称支持启用 Smart App Control 的环境；该功能可能阻止未签名且缺乏信誉的程序，参见 [Microsoft 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)。本次未使用用户正式账本或登录资料。
 
 安装器大小：130,697,334 字节。SHA-256：
 
