@@ -62,6 +62,25 @@ try {
   $protectedFiles[$sentinel]=(Get-FileHash -LiteralPath $sentinel).Hash
   $report.checks+='actual workbench 0.11.4 installed and started before cloud installation'
   $env:LINGTU_TEST_LEDGER='1';$env:LINGTU_ISOLATED_TEST='1'
+  $cloudSentinel=$null
+  if($spec.previousFile){
+    'Installing previous standalone cloud before upgrade' | Set-Content C:\Results\stage.txt
+    $previous=Join-Path C:\Input $spec.previousFile
+    if((Get-FileHash -LiteralPath $previous).Hash.ToLowerInvariant() -ne $spec.previousSha256){throw 'Previous cloud installer hash mismatch'}
+    $previousLocal=Join-Path $localInstallers $spec.previousFile
+    Copy-Item -LiteralPath $previous -Destination $previousLocal
+    if((Get-FileHash -LiteralPath $previousLocal).Hash.ToLowerInvariant() -ne $spec.previousSha256){throw 'Previous cloud copy hash mismatch'}
+    $setup=Start-Process -FilePath $previousLocal -ArgumentList '/S' -WindowStyle Hidden -Wait -PassThru
+    if($setup.ExitCode -ne 0){throw 'Previous cloud installation failed'}
+    $cloudExe=Join-Path $env:LOCALAPPDATA 'Programs\CainiaoWarehouse\CainiaoWarehouse.exe'
+    Stop-OwnedApp $cloudExe
+    $previousProcess=Open-CheckedApp $cloudExe '菜鸟云仓' 60
+    Stop-Process -Id $previousProcess.Id
+    $cloudSentinel=Join-Path $env:APPDATA 'cainiao-cloud-warehouse\coexistence-demo.txt'
+    'SYNTHETIC TEST DATA - preserve across upgrade and reinstall' | Set-Content -LiteralPath $cloudSentinel
+    $cloudSentinelHash=(Get-FileHash -LiteralPath $cloudSentinel).Hash
+    $report.previousStandaloneVersion='0.9.5'
+  }
   foreach($attempt in 1,2){
     "Installing standalone cloud warehouse: $attempt" | Set-Content C:\Results\stage.txt
     $setup=Start-Process -FilePath $installer -ArgumentList '/S' -WindowStyle Hidden -Wait -PassThru
@@ -70,6 +89,8 @@ try {
     $report.cloudInstallationDirectory=Split-Path $cloudExe
     Stop-OwnedApp $cloudExe
     $cloudProcess=Open-CheckedApp $cloudExe '菜鸟云仓' 60
+    if((Get-Item -LiteralPath $cloudExe).VersionInfo.ProductVersion -notlike '0.9.6*'){throw 'Installed cloud version is not 0.9.6'}
+    if($cloudSentinel -and (Get-FileHash -LiteralPath $cloudSentinel).Hash -ne $cloudSentinelHash){throw 'Cloud test data changed during upgrade or reinstall'}
     if(!(Test-Path -LiteralPath (Join-Path $env:APPDATA 'cainiao-cloud-warehouse\settings.json'))){throw 'Independent cloud profile missing'}
     foreach($f in $hostFiles){if((Get-FileHash -LiteralPath $f).Hash -ne $hostHashes[$f]){throw 'Workbench program was overwritten'}}
     foreach($f in $protectedFiles.Keys){if((Get-FileHash -LiteralPath $f).Hash -ne $protectedFiles[$f]){throw 'Workbench data binding/profile was changed'}}
@@ -82,6 +103,7 @@ try {
     if($cloudProcess.HasExited -or !$cloudProcess.Responding){throw 'Cloud stopped responding while workbench was opened'}
     Stop-Process -Id $hostProcess.Id
     $report.checks+=@{attempt=$attempt;installed=$true;independentProfile=$true;hostProgramAndBindingsUnchanged=$true;separateUninstallEntry=$true;bothApplicationsStarted=$true}
+    if($cloudSentinel){$report.syntheticCloudDataPreserved=$true}
     Stop-Process -Id $cloudProcess.Id
   }
   'Uninstalling cloud while retaining workbench' | Set-Content C:\Results\stage.txt
