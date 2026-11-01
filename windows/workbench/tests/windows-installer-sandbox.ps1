@@ -90,7 +90,7 @@ try {
     $cloudSentinel=Join-Path $env:APPDATA 'cainiao-cloud-warehouse\coexistence-demo.txt'
     'SYNTHETIC TEST DATA - preserve across upgrade and reinstall' | Set-Content -LiteralPath $cloudSentinel
     $cloudSentinelHash=(Get-FileHash -LiteralPath $cloudSentinel).Hash
-    $report.previousStandaloneVersion='0.9.5'
+    $report.previousStandaloneVersion=$spec.previousVersion
   }
   foreach($attempt in 1,2){
     "Installing standalone cloud warehouse: $attempt" | Set-Content C:\Results\stage.txt
@@ -100,7 +100,7 @@ try {
     $report.cloudInstallationDirectory=Split-Path $cloudExe
     Stop-OwnedApp $cloudExe
     $cloudProcess=Open-CheckedApp $cloudExe '菜鸟云仓' 60
-    if((Get-Item -LiteralPath $cloudExe).VersionInfo.ProductVersion -notlike '0.9.6*'){throw 'Installed cloud version is not 0.9.6'}
+    if((Get-Item -LiteralPath $cloudExe).VersionInfo.ProductVersion -notlike "$($spec.version)*"){throw "Installed cloud version is not $($spec.version)"}
     if($cloudSentinel -and (Get-FileHash -LiteralPath $cloudSentinel).Hash -ne $cloudSentinelHash){throw 'Cloud test data changed during upgrade or reinstall'}
     if(!(Test-Path -LiteralPath (Join-Path $env:APPDATA 'cainiao-cloud-warehouse\settings.json'))){throw 'Independent cloud profile missing'}
     foreach($f in $hostFiles){if((Get-FileHash -LiteralPath $f).Hash -ne $hostHashes[$f]){throw 'Workbench program was overwritten'}}
