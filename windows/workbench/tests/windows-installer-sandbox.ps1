@@ -4,6 +4,13 @@ $report = @{ok=$false; checks=@(); scope='Windows Sandbox coexistence with actua
 function Stop-OwnedApp([string]$file) {
   Get-Process | Where-Object {$_.Path -eq $file} | Stop-Process -ErrorAction SilentlyContinue
 }
+function Get-ShortcutTarget([string]$file) {
+  # WScript.Shell.CreateShortcut silently loses characters outside the system
+  # ANSI code page. Read the Unicode Shell property without modifying the link.
+  $folder=$script:shortcutShell.NameSpace((Split-Path -LiteralPath $file))
+  $item=$folder.ParseName((Split-Path $file -Leaf))
+  return $item.ExtendedProperty('System.Link.TargetParsingPath')
+}
 function Open-CheckedApp([string]$file,[string]$title,[int]$limit=90) {
   $p=Start-Process -FilePath $file -PassThru
   for($i=0;$i -lt $limit;$i++) {
@@ -50,12 +57,13 @@ try {
   if(!$hostRegistration){throw 'Workbench registration missing'}
   $hostKey=$hostRegistration.PSPath
   $hostUninstall=$hostRegistration.UninstallString
-  $shell=New-Object -ComObject WScript.Shell
+  $script:shortcutShell=New-Object -ComObject Shell.Application
   $shortcutRoots=@('DesktopDirectory','CommonDesktopDirectory','StartMenu','CommonStartMenu') | ForEach-Object {[Environment]::GetFolderPath($_)} | Where-Object {$_ -and (Test-Path -LiteralPath $_)} | Select-Object -Unique
-  $shortcuts=@($shortcutRoots | ForEach-Object {Get-ChildItem -LiteralPath $_ -Filter '*.lnk' -Recurse -File} | ForEach-Object {@{path=$_.FullName;target=$shell.CreateShortcut($_.FullName).TargetPath}})
+  $shortcuts=@($shortcutRoots | ForEach-Object {Get-ChildItem -LiteralPath $_ -Filter '*.lnk' -Recurse -File} | ForEach-Object {@{path=$_.FullName;target=(Get-ShortcutTarget $_.FullName)}})
   $shortcuts | ConvertTo-Json -Depth 4 | Set-Content C:\Results\baseline-shortcuts.json
   $hostShortcuts=@($shortcuts | Where-Object {$_.target -eq $hostExe})
   if(!$hostShortcuts.Count){throw 'Workbench shortcut missing from user/public desktop and start menu'}
+  foreach($link in $hostShortcuts){$link.hash=(Get-FileHash -LiteralPath $link.path).Hash}
   $report.protectedWorkbenchShortcuts=$hostShortcuts.Count
   $protectedFiles=@{}
   foreach($f in @((Join-Path $env:USERPROFILE 'Documents\LingtuWorkbench\registry.json'),(Join-Path $env:USERPROFILE 'Documents\LingtuWorkbench\workbench-location.json'))){if(Test-Path -LiteralPath $f){$protectedFiles[$f]=(Get-FileHash -LiteralPath $f).Hash}}
@@ -98,7 +106,7 @@ try {
     foreach($f in $hostFiles){if((Get-FileHash -LiteralPath $f).Hash -ne $hostHashes[$f]){throw 'Workbench program was overwritten'}}
     foreach($f in $protectedFiles.Keys){if((Get-FileHash -LiteralPath $f).Hash -ne $protectedFiles[$f]){throw 'Workbench data binding/profile was changed'}}
     if((Get-ItemProperty -LiteralPath $hostKey).UninstallString -ne $hostUninstall){throw 'Workbench uninstall identity changed'}
-    foreach($link in $hostShortcuts){if(!(Test-Path -LiteralPath $link.path) -or $shell.CreateShortcut($link.path).TargetPath -ne $link.target){throw 'Workbench shortcut changed'}}
+    foreach($link in $hostShortcuts){if(!(Test-Path -LiteralPath $link.path) -or (Get-ShortcutTarget $link.path) -ne $link.target -or (Get-FileHash -LiteralPath $link.path).Hash -ne $link.hash){throw 'Workbench shortcut changed'}}
     $cloudRegistration=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object DisplayName -like '菜鸟云仓*' | Select-Object -First 1
     if(!$cloudRegistration -or $cloudRegistration.PSPath -eq $hostKey){throw 'Cloud uninstall registration is not independent'}
     $hostProcess=Open-CheckedApp $hostExe '五成电子商务工作台' 90
@@ -117,7 +125,7 @@ try {
   if(Test-Path -LiteralPath $cloudExe){throw 'Cloud executable remains after uninstall'}
   foreach($f in $hostFiles){if((Get-FileHash -LiteralPath $f).Hash -ne $hostHashes[$f]){throw 'Cloud uninstall removed or changed workbench'}}
   foreach($f in $protectedFiles.Keys){if((Get-FileHash -LiteralPath $f).Hash -ne $protectedFiles[$f]){throw 'Cloud uninstall changed workbench data binding'}}
-  foreach($link in $hostShortcuts){if(!(Test-Path -LiteralPath $link.path) -or $shell.CreateShortcut($link.path).TargetPath -ne $link.target){throw 'Workbench shortcut removed or changed by cloud uninstall'}}
+  foreach($link in $hostShortcuts){if(!(Test-Path -LiteralPath $link.path) -or (Get-ShortcutTarget $link.path) -ne $link.target -or (Get-FileHash -LiteralPath $link.path).Hash -ne $link.hash){throw 'Workbench shortcut removed or changed by cloud uninstall'}}
   if(!(Get-ItemProperty -LiteralPath $hostKey)){throw 'Workbench registration removed'}
   Remove-Item Env:LINGTU_TEST_LEDGER -ErrorAction SilentlyContinue
   Remove-Item Env:LINGTU_ISOLATED_TEST -ErrorAction SilentlyContinue

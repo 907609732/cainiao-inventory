@@ -19,6 +19,9 @@ jobs:
         scenario: [fresh, upgrade]
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Unicode shortcut reader
+        shell: pwsh
+        run: ./windows/workbench/tests/windows-shortcut-reader.ps1
       - name: Download and verify candidate and authentic workbench
         shell: pwsh
         env:
