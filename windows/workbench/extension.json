@@ -1,0 +1,820 @@
+{
+  "id": "warehouse",
+  "name": "菜鸟云仓同步",
+  "platform": "win32",
+  "arch": "x64",
+  "surface": "window",
+  "entry": "desktop/main.mjs",
+  "repository": "907609732/cainiao-inventory-codex",
+  "sourceRepository": "907609732/wucheng-ecommerce-erp-v2",
+  "sourceCommit": "a9953146df59343969a08d62e4e7cf9bfa0da764",
+  "dataPolicy": "preserve-existing",
+  "files": [
+    {
+      "path": "core/backfill-cainiao-monthly-sales.js",
+      "sha256": "986590f1218ad0639e69a04464fd3eb9c7bd36de28ab99456193986338a8598a"
+    },
+    {
+      "path": "core/browser-launch.js",
+      "sha256": "7b44ba44a941c8b6d93e07c9c02a0e269bda9afd92e0af6ce30bd3cb1628895b"
+    },
+    {
+      "path": "core/config.js",
+      "sha256": "cfe6ff205da88638ba0ac01f554019f34f5e835139262b0a3615a8c5e21fc8c9"
+    },
+    {
+      "path": "core/dingtalk-app-robot.js",
+      "sha256": "fc5b1422f8ce1f46125ab0c2ebef32907962febcec0163bdea8b53f9608a05cf"
+    },
+    {
+      "path": "core/dingtalk-inventory-reminder.js",
+      "sha256": "86e287151ba3fca4e55786a75f91d74676d1c192020bc79fb021a648121efbc7"
+    },
+    {
+      "path": "core/dingtalk.js",
+      "sha256": "4712c32d12913425caeae6a5aedb0e089aa04c437268cbbaceb2f6b2fc8fd286"
+    },
+    {
+      "path": "core/playwright-login.js",
+      "sha256": "68b5c68992f9fedd8cea21b8a30828e150e58801d0b7dd01f7124d4e8795375a"
+    },
+    {
+      "path": "core/sync-cainiao-inventory.js",
+      "sha256": "61eb729cb72f70361a652d25cfb86bbe695165f42606fa6fc11b41d304201f83"
+    },
+    {
+      "path": "core/sync-cainiao-monthly-sales.js",
+      "sha256": "f2957a3ad06258c17e1991cee8d81f80236d0d811fcc3fc31f65a1e61b21b9e7"
+    },
+    {
+      "path": "core/warehouse-agent-worker.mjs",
+      "sha256": "b12a79e95addd1a5d8b1cb2489fc71fce3877918e0512031838da1dca89836e9"
+    },
+    {
+      "path": "core/xlsx.js",
+      "sha256": "3634b5a71353b8cb1e06165abab45184efb47ced83a53a3c54897d4d591b1878"
+    },
+    {
+      "path": "core/erp/db.js",
+      "sha256": "2dfb3d5e2859a4e0ad1e6de6ad659c2febee369911d89cf38c35db9cb1712149"
+    },
+    {
+      "path": "core/erp/dingtalk-auth.js",
+      "sha256": "01670c9d2c75e79c31a6fc3d5c6f97ac35bc47a19535e67bff7dfac99222d6ff"
+    },
+    {
+      "path": "core/erp/importers.js",
+      "sha256": "95a2252261449b25f612921a90f86bbf83a14f17f11b1f8c0f3a133efd0574a8"
+    },
+    {
+      "path": "core/erp/inventory-alert.js",
+      "sha256": "28e14c181bd0c7a6f1b4df6262e291c0d0856e0c63b661f52ad43142a76b104f"
+    },
+    {
+      "path": "core/erp/inventory-validation.js",
+      "sha256": "b89437ed8c3351a024ed5f0f734df07e339128711d3ee48d694d7643e682afa5"
+    },
+    {
+      "path": "core/erp/monthly-sales-dashboard.js",
+      "sha256": "136719c6577ea52317ecc463e76bca3e2c4d150fa7f76d444ca2d81388133aba"
+    },
+    {
+      "path": "core/erp/reports.js",
+      "sha256": "090e417b6af78504d9f4d36c3caac0a94b3356dc814256609fbbaa7eff5e46ba"
+    },
+    {
+      "path": "core/erp/sheets.js",
+      "sha256": "02f8526af259c0c1d07914e4416f7fd326590fa9d54a0bd66384da57108a038b"
+    },
+    {
+      "path": "core/erp/warehouse-daily.js",
+      "sha256": "c0009caa390e8a7ee234c768a0a56a78f8b33a42cedeea4d28851a9003b93465"
+    },
+    {
+      "path": "core/erp/warehouse-monthly-sales.js",
+      "sha256": "46625fb5985a099799dae6014f1be99956b744a97fc19341e4ab635651a0b567"
+    },
+    {
+      "path": "core/erp/warehouse-schema.js",
+      "sha256": "ce3a44242d4d901fe0d05bf687cbd4c2bb9ef7c4677127dd49f7d6511dbfc140"
+    },
+    {
+      "path": "core/erp/warehouse-source-preview.js",
+      "sha256": "e73e3c38dfc74044f5e46a49fc894cb07e996026d536bdb00f31b73c8e33f763"
+    },
+    {
+      "path": "desktop/extension-preload.cjs",
+      "sha256": "ac2b592222e9afb340597fc19f637fe3eefe3fa374b396acf87acbe6252294b0"
+    },
+    {
+      "path": "desktop/local-desks.mjs",
+      "sha256": "6a789d87ac82c2b27209f13ea85c3c512a01e5da7107c55b7be44d33344dbbc0"
+    },
+    {
+      "path": "desktop/main.mjs",
+      "sha256": "1b54b92444a44bb780769bfba22616d6e7e384abd3d0375916eadba8e77bb91d"
+    },
+    {
+      "path": "desktop/mcp-server.mjs",
+      "sha256": "3e791ac3d0512c3a914a1260257971b21e32f22f4b1d0109f883fe3e2eeda9b1"
+    },
+    {
+      "path": "desktop/mcp-stdio-entry.mjs",
+      "sha256": "b96d47a571c773ddfa31e226b0d9d818501a7c12649c62f912a36e8e3fd466f8"
+    },
+    {
+      "path": "desktop/packaged-smoke.mjs",
+      "sha256": "1058cc2de957a7d48a1b6b0b030949ce01d676f0d291c13ad53bfcbd538eb798"
+    },
+    {
+      "path": "desktop/preload.cjs",
+      "sha256": "c24718ccc018d00f365940797b91ed68271fc78216ce7a330320f74d387eedf1"
+    },
+    {
+      "path": "desktop/prepare-build.mjs",
+      "sha256": "5303840cd6eb14af07f5ca3de63854829f0cfb0cbfa86c349539ddac45f88dbb"
+    },
+    {
+      "path": "desktop/updater.mjs",
+      "sha256": "3aa1ec68fa77c38fd37b0ee47bd42408067f43cc1d3fb3e0c7bf6b18807609f2"
+    },
+    {
+      "path": "desktop/assets/lingtu-icon.png",
+      "sha256": "9509a5acd59263ba60cdb51fc8e2a28b8abe7474e0e91c2acadc6517a94880e3"
+    },
+    {
+      "path": "desktop/assets/lingtu-logo-master.png",
+      "sha256": "046211332a58ccdcf7b2b1d5aa12092e3ffa412173d7f0d7cdfa90152677ef62"
+    },
+    {
+      "path": "desktop/business-host/activation-resources.mjs",
+      "sha256": "b5af7007314285bbf715623d454d571396fdb43e35f3313865de4eb77ac9a091"
+    },
+    {
+      "path": "desktop/business-host/activation.mjs",
+      "sha256": "dfee9c8b45db456bc11b7b755b7756e7680aa24b92de550a64a270c55b040ca9"
+    },
+    {
+      "path": "desktop/business-host/backup-sqlite.mjs",
+      "sha256": "e1ad3e31165538eb035a1309f2fed7758b1e2364f2a5b21e9d414e04ce146ab8"
+    },
+    {
+      "path": "desktop/business-host/bridge.mjs",
+      "sha256": "d487e01d936ef839e23a44bbc500158581dff1d55b68349e13bc59a91a5f31db"
+    },
+    {
+      "path": "desktop/business-host/business-surface.mjs",
+      "sha256": "b713c5c5290cbb3f0085962f7678d60ad1aced894bea58b0c0421c61c7ed754c"
+    },
+    {
+      "path": "desktop/business-host/common.mjs",
+      "sha256": "f3a157baaed26a80dcd7b24239992b72661fbac38da01660e8e1bda6b3238d9c"
+    },
+    {
+      "path": "desktop/business-host/data-maintenance.mjs",
+      "sha256": "923f03a187d979a658d1648bdcd046ee8b6111b510aba74aa433cda2a5124ddf"
+    },
+    {
+      "path": "desktop/business-host/data-rewrite-rules.json",
+      "sha256": "7cf8248364e62bcf0b99f25b7ebbafbead686c2d0b6b3aa4fba3435642d588bc"
+    },
+    {
+      "path": "desktop/business-host/data-rewrite.mjs",
+      "sha256": "683dd7ae9c6b30a1621ba65c369ae1413fdadcef077247c7e1514c9bfd91feeb"
+    },
+    {
+      "path": "desktop/business-host/desktop-ui-sessions.mjs",
+      "sha256": "3f39fcc3eaacbddd9acdcd81a3e8b7f25e445f790e08d4a7a1cb3f746b2c83d6"
+    },
+    {
+      "path": "desktop/business-host/identity.mjs",
+      "sha256": "cdc8a750d8e9f5c1cf6d3f77fa29709a8e1be6a66ebfb5a36ee046112cf0aeb7"
+    },
+    {
+      "path": "desktop/business-host/isolation.mjs",
+      "sha256": "d3c3a06b4d8c194a6f5277d8c27e438e7225f9f583c8d926fbfe5813b720265e"
+    },
+    {
+      "path": "desktop/business-host/launcher-policy.mjs",
+      "sha256": "2d2a6218d0d1304f7e28b351f3c3f74db1c0896788b86d5a50b31194d1be8d87"
+    },
+    {
+      "path": "desktop/business-host/module-backup.mjs",
+      "sha256": "3f6fb348ad2c5f7b93381abfc5b98f2a2bfc19c3235cd073edbfb6ea5e6e7c28"
+    },
+    {
+      "path": "desktop/business-host/on-demand.mjs",
+      "sha256": "2a625b85b465834caff2906cde1756a15224ca333aa52297e43e0ff9cc05ba96"
+    },
+    {
+      "path": "desktop/business-host/preview-ledgers.mjs",
+      "sha256": "cc0a514ea9111ee20d63d918dc6ae74f3a96500e767c0c2fa21f2debdf631001"
+    },
+    {
+      "path": "desktop/business-host/resource-layout.mjs",
+      "sha256": "42187658a8d8f3e142541d74de120e070ee73b48df1ea668e469e5c138a620f5"
+    },
+    {
+      "path": "desktop/business-host/routes.mjs",
+      "sha256": "87c4ca2e122ca1c9ebbca8ea6458d529136890096cd1747b199f22f33545ae52"
+    },
+    {
+      "path": "desktop/business-host/startup.mjs",
+      "sha256": "30367a1aaae2a0f9f5caf1525e4ce143cc1a3e01a34ce61a8eb2f0fefdc128d6"
+    },
+    {
+      "path": "desktop/business-host/trust.mjs",
+      "sha256": "b81edcdcc06634f29ff871d7187473dd7ab8e3a1ccc5e62e15b4b259acf805d6"
+    },
+    {
+      "path": "desktop/business-interface/activated-adapters.mjs",
+      "sha256": "c03f436ba6b82b60b4532f86ec5ad21fe45deefd47bf70f5ea15d04a3fe7a9c8"
+    },
+    {
+      "path": "desktop/business-interface/approval.mjs",
+      "sha256": "d0778b948bdceefa202712974b0eaf1c8053f238278046148f6e8a954eb1bfbb"
+    },
+    {
+      "path": "desktop/business-interface/index.mjs",
+      "sha256": "c7fa6728a5035946829f9c92f4e4ed4ec9503245877fb265168301c4af5fe6f5"
+    },
+    {
+      "path": "desktop/business-interface/module-transport.mjs",
+      "sha256": "b46262b597422f9866c51959dd19dfa673bab7b536666a611a3b6bf3dd0281c6"
+    },
+    {
+      "path": "desktop/business-interface/store.mjs",
+      "sha256": "1eda3ec8f328182391e7a0ba087ab3ac29e4f724a95563b71cee87677bfb41cd"
+    },
+    {
+      "path": "desktop/modules/bundled-suite.mjs",
+      "sha256": "fff3e2cbe0f99ac89023e0de930e622da40f801c775f7cd486bf83f13e8ac61a"
+    },
+    {
+      "path": "desktop/modules/cloud-control.mjs",
+      "sha256": "2428217c1bf6754a708c51756105174b5089eb323a3a17ef3071cfe4001db99f"
+    },
+    {
+      "path": "desktop/modules/electron-lifecycle.mjs",
+      "sha256": "ae0cf74179f53c3ad1f91b49966eabcff18f22afd405eb5baabbba89bd95a17f"
+    },
+    {
+      "path": "desktop/modules/module-manager.mjs",
+      "sha256": "c08add6ba3b72f5fd226d691cd134ff5df1be7bcd99cf65ea58d0395b4713d7e"
+    },
+    {
+      "path": "desktop/modules/native-fs.mjs",
+      "sha256": "ea2148dc775cf563c6e2ded1005aaab734ee2f13e93d68fb3953702b9080b6f9"
+    },
+    {
+      "path": "desktop/modules/package-format.mjs",
+      "sha256": "4154deedb92d2d416d101d255d249553491f061208908292e798bc3e200c7ea3"
+    },
+    {
+      "path": "desktop/modules/service-lifecycle.mjs",
+      "sha256": "2b01436111c063dabd62aa648a79c697f77077e6fff3a210812a72315ed18336"
+    },
+    {
+      "path": "desktop/product/extension-layout.mjs",
+      "sha256": "dcdcf06795ffe6f2b5eae55236087747d28cf3ce0e5a8193b3d1b60ce7c9b361"
+    },
+    {
+      "path": "desktop/product/modules.mjs",
+      "sha256": "47317d158673ba049da40302e6e4e18b721cbbc9656d8fe6a92e4e410af1d859"
+    },
+    {
+      "path": "desktop/product/retired-features.mjs",
+      "sha256": "c6d3cfc711edd918420c57dc3948d42d03c05d32716bbd43e70957ecfbe73d30"
+    },
+    {
+      "path": "desktop/renderer/daily-work.css",
+      "sha256": "7f1079aa952c056fb19e65da511d5addd23959fe03d90da6ff0ca12f35243b4d"
+    },
+    {
+      "path": "desktop/renderer/feature-help-content.js",
+      "sha256": "eda32f2f69741994a91439dd5051048ce058ea49618ecc8cfd99c159e3c88980"
+    },
+    {
+      "path": "desktop/renderer/feature-help.js",
+      "sha256": "4d1382515c6bcb03d902b81b948894a32ef63e57e3ceb56965da79c90c19021a"
+    },
+    {
+      "path": "desktop/renderer/index.html",
+      "sha256": "71ff0ba59532f1e1d1fe61aad7ba657c36c1f67d6fee7d1f952993d2a3511a27"
+    },
+    {
+      "path": "desktop/renderer/remote-warehouse-ui.mjs",
+      "sha256": "2687438fb3e7f61dfed20ef788d3c37f5b98daaf917ffec6d5690263ba8dc950"
+    },
+    {
+      "path": "desktop/renderer/renderer.js",
+      "sha256": "8120a851a52367112290684264af6c85ef224e9f18622b88dca22999c1f04e17"
+    },
+    {
+      "path": "desktop/renderer/styles.css",
+      "sha256": "ca1f812bf18f71e41724559647dca25f65c37b323bda0d99954c2fb37709c625"
+    },
+    {
+      "path": "desktop/renderer/warehouse-view-styles.mjs",
+      "sha256": "8e911ad110097c3b8d4967114b69ac7c7ccb8709b709a82093fdcdc6023c5da5"
+    },
+    {
+      "path": "desktop/shared/ai-interface.mjs",
+      "sha256": "b6b35384e2c771507dc677f03293e8e6f5e09624ca46f2007a935b500da42b44"
+    },
+    {
+      "path": "desktop/shared/branding.cjs",
+      "sha256": "1659f4a5adb702384b06363388a1a0852a3cd9fd9601ce94b59bfae019937d6c"
+    },
+    {
+      "path": "desktop/shared/business-service-client.mjs",
+      "sha256": "71c54cd24caae050a824415849336d5d5de37ac0aca49a29208ee7b5120ad2df"
+    },
+    {
+      "path": "desktop/shared/business-service-host.mjs",
+      "sha256": "891dccec6dc88bdd359dad01b523efc617d3d562b676a1f962b0698572ed2e0f"
+    },
+    {
+      "path": "desktop/shared/business-service-worker.mjs",
+      "sha256": "8329b04b42b71c438afa11148d06354b84c93b44e2fc60e70bc4552cf78a9299"
+    },
+    {
+      "path": "desktop/shared/changelog.mjs",
+      "sha256": "96a40eec00cc1eff1c2809a5fb2be88fea306bfdfc7a699234ac130bda5ef665"
+    },
+    {
+      "path": "desktop/shared/cli-child-result.mjs",
+      "sha256": "339a2d404e28c2e464f88e5d8cf2764f3a91042ae86de61453244cb93ae32cdb"
+    },
+    {
+      "path": "desktop/shared/cli-request-args.mjs",
+      "sha256": "54cecfbb2a04b5bdf50961504bd0e5bf16fec1b8a22ba401fa3754822a3e8def"
+    },
+    {
+      "path": "desktop/shared/component-context.d.mts",
+      "sha256": "0abed982cd53d31ea6eb726a83e3064f3974f6b1c2fe2b391174f62409763e3f"
+    },
+    {
+      "path": "desktop/shared/component-context.mjs",
+      "sha256": "7892cbd7b4cb5638fac9c0585ac2080a56487bf52774f9b1f3c1cbcdcaf88873"
+    },
+    {
+      "path": "desktop/shared/diagnostics.mjs",
+      "sha256": "3cc8cd60d42bf4757b994822d9b4f9b5ba5ce6e240fde4b9e216d31bf2f76e3c"
+    },
+    {
+      "path": "desktop/shared/extensions.mjs",
+      "sha256": "3c04e045b716c7e6e7e127efc4abf8211874eefeb4c4235d43329999bedc7c95"
+    },
+    {
+      "path": "desktop/shared/external-links.mjs",
+      "sha256": "fdc6bcd839151fc358ecd13b95a16cc28958585477da46cb4f3ce7e00abb283f"
+    },
+    {
+      "path": "desktop/shared/install-desks.mjs",
+      "sha256": "d778e0f0fc71287c69e2b692002014bd9fd7cf4fbca744f9191ef2892ae1d1cb"
+    },
+    {
+      "path": "desktop/shared/inventory-mcp-runtime.mjs",
+      "sha256": "981043b24f68b2d9709d13d8956f9f125b034c3261a8bccba2b12102e1474c7a"
+    },
+    {
+      "path": "desktop/shared/inventory-store.mjs",
+      "sha256": "9f43fbb4e57fac962f81f5e17745415c69c3e634063cc763eafb2e8b07cf998d"
+    },
+    {
+      "path": "desktop/shared/loading-screen-auto.mjs",
+      "sha256": "355fe276356ad3e6f2ce651e2641a014e9d0f1d14fb23ea89a6fef1bfc9d5dd0"
+    },
+    {
+      "path": "desktop/shared/loading-screen-remote.mjs",
+      "sha256": "6f282c665339253ed2b4b8ee1dffc1faceca593a67494a06a434ebd83ce9c581"
+    },
+    {
+      "path": "desktop/shared/loading-screen.css",
+      "sha256": "d4c4cfb8aec446860ff8d756e2790a721951e6939e3c9205d173471d6b13d9fb"
+    },
+    {
+      "path": "desktop/shared/loading-screen.mjs",
+      "sha256": "8e9b9b1d2250b42899473153f1f869129c4ef523fef8bf9b32eca81f2e031b87"
+    },
+    {
+      "path": "desktop/shared/local-workbench-adapter.mjs",
+      "sha256": "f929aef54778488b5c822e86bb8bab99ab9e080a8eb01dd55937278e61488bd2"
+    },
+    {
+      "path": "desktop/shared/monthly-sales-store.mjs",
+      "sha256": "c70293386661ba2cce169150adbb3f266d54bfe556375037e21f403de255d8cf"
+    },
+    {
+      "path": "desktop/shared/remote-service.mjs",
+      "sha256": "781209ff7b61289873e8d6c74a42abd9d63d20f6a92d191077c7d7834b8c4bc9"
+    },
+    {
+      "path": "desktop/shared/runtime-contract.mjs",
+      "sha256": "54004410f0e919430b377dbeb530e5826ba4ae3d35f8b7e34cbe6de90f8d0515"
+    },
+    {
+      "path": "desktop/shared/secret-storage.mjs",
+      "sha256": "7c780711b6b74c61ee3fc17c424b6732972a95e1174ddfd8700cc79bb5f3a2a3"
+    },
+    {
+      "path": "desktop/shared/service-manager.mjs",
+      "sha256": "0ffc9d78d01e457ad8cdbf84d9f49edb30aa9f92c033670ef2e7e8d1787441f0"
+    },
+    {
+      "path": "desktop/shared/settings.mjs",
+      "sha256": "5243ec31b31929f15aaffaf09edf6531895d1b7bbf1aa86dff9398b7ccc68114"
+    },
+    {
+      "path": "desktop/shared/task-process.mjs",
+      "sha256": "06a8070fbbee9672e005d319069e93e90d5b14fdf83a18fc9b86d567debe5979"
+    },
+    {
+      "path": "desktop/shared/task-schedule.mjs",
+      "sha256": "f4b564dbb6a7ef0b067d25bb0830a38f129b2083d4a73163df51a1170656a1bd"
+    },
+    {
+      "path": "desktop/shared/user-data-path.mjs",
+      "sha256": "6a2b2f580e35e2b4abcefef0509fe2dafe4f913d83747a168c4bb89d5062e994"
+    },
+    {
+      "path": "desktop/shared/workbench-dispatcher.mjs",
+      "sha256": "7a56d21888cb7a19d2bd149463557ce4e00c405010d23b736ca89cb40f805f24"
+    },
+    {
+      "path": "desktop/shared/workbench-location.mjs",
+      "sha256": "02bfb4e91f444b23b0a7664e830d49dfacae6a9f31252f7f3f8394d858350d38"
+    },
+    {
+      "path": "desktop/shared/workbench-mcp-runtime.mjs",
+      "sha256": "7972607ba83b9f2988de9ee790d7a6859789fe7dd7cdb572edb4d8e846304feb"
+    },
+    {
+      "path": "desktop/workbench/actor.mjs",
+      "sha256": "61323256725d80c92c8bb2fd78e2d5fee9eed56359e70b868d2be2b040569a74"
+    },
+    {
+      "path": "desktop/workbench/company-access.mjs",
+      "sha256": "391feefcbbada8d63fe9c4a4d8990589b9a9273256ba57376894ed28bec3e4bb"
+    },
+    {
+      "path": "desktop/workbench/descriptors.mjs",
+      "sha256": "c03a8301642ed6c8ae8c642f74fb6f09d89a7607802193732790847046dfcbfc"
+    },
+    {
+      "path": "desktop/workbench/exporter-adapter.mjs",
+      "sha256": "29dbb6cfb1bcb65011b5a80264e0ba23f41e14ba4c492b67d4ddfb9714b3386b"
+    },
+    {
+      "path": "desktop/workbench/gateway.mjs",
+      "sha256": "3e33ff5e3f17a25a75e68463494275a379eb4563e06ee11388fd9afd83b2c61a"
+    },
+    {
+      "path": "desktop/workbench/manifest.mjs",
+      "sha256": "0366d5cd425fcd52e188fb91886bb46eabc666474370ae938bf19f23b5e6c29a"
+    },
+    {
+      "path": "desktop/workbench/policy.mjs",
+      "sha256": "6aed6518fa84ea27e88083ec4b44880d46720a71faeeeef84d9f792638debf23"
+    },
+    {
+      "path": "desktop/workbench/README.md",
+      "sha256": "976e2b03808eb440786c775419ec8bbc8befc3d27c912cd400d1c836b899b9de"
+    },
+    {
+      "path": "desktop/workbench/server.mjs",
+      "sha256": "4a4ed3b2e0e6695d86532bdabf80cd55623f69eaefeac737ee7d272d2fc8a8e1"
+    },
+    {
+      "path": "desktop/workbench/store.mjs",
+      "sha256": "7c71047205a44cd24f074e7db1e1761b8f876549cb2df9658afff966b33b7621"
+    },
+    {
+      "path": "desktop/workbench/warehouse-adapter.mjs",
+      "sha256": "dce723e6e053af9e790660e9433079d5aa8e9847b2a38f6545c95a159bd0a365"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent-api.mjs",
+      "sha256": "85da545d48876b3f03fa288b94c2ab69ceb1d23bec1eb23f2e39b9d062cb82a5"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent-artifacts.mjs",
+      "sha256": "67b50acc2747ac147f2f3627326eba37dadc086d75c74622df1aabcec920dc53"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent-jobs.mjs",
+      "sha256": "1a67c7b46af2a94856d3bba4926897b1dbea8825d64175f58d620a77e3e80b97"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent-schedules.mjs",
+      "sha256": "493a6a7bd070b391ce6cdbbabae1e6cffe00e29ab97a9ec9a27e079a560a9ccb"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent-schema.mjs",
+      "sha256": "72b234f37913962b6a545cd059a38dffcd63192283ac12952ea50230ca22ffed"
+    },
+    {
+      "path": "desktop/workbench/warehouse-agent.mjs",
+      "sha256": "c3732a9880848ad4fc337857ff301bf3e477ff3b1055397a2149e6537d75003c"
+    },
+    {
+      "path": "desktop/workbench-client/cache.mjs",
+      "sha256": "805dd1880d22253caa8d28ab003bb0f84588c229eaac299f00813cacc971e535"
+    },
+    {
+      "path": "desktop/workbench-client/cli.mjs",
+      "sha256": "3db494a5285d66aea439e78c0ac7d269ed08473b843c0c867b9ebccb24d0bea0"
+    },
+    {
+      "path": "desktop/workbench-client/connection-health.mjs",
+      "sha256": "a7848b94bdda7daebec74db6deda9984da63ea421876316a5a5e784104e0d19a"
+    },
+    {
+      "path": "desktop/workbench-client/connection.mjs",
+      "sha256": "4a40a0087c9f538bfa7dcee43a75664c28bb804e585fda111eca05349103556c"
+    },
+    {
+      "path": "desktop/workbench-client/embedded-session.mjs",
+      "sha256": "32f3c9c90b0bcc9a91ad0294de7704a99518db4a4a6f3e0a8920291ff236d024"
+    },
+    {
+      "path": "desktop/workbench-client/gateway-lifecycle.mjs",
+      "sha256": "4701c09293644247aedd0e431c2a52fc500e94da07f0d43f7b64452e2aa1d5f5"
+    },
+    {
+      "path": "desktop/workbench-client/inventory.mjs",
+      "sha256": "e0d0732df366ed0cf49f0bb97caaf5da1455d5256b5a1b7b7f8360f5ba914a3b"
+    },
+    {
+      "path": "desktop/workbench-client/migration-source.mjs",
+      "sha256": "25668b18e26872d3431f87c905237a57aaaede246856e79c9a0a2ac862836ea8"
+    },
+    {
+      "path": "desktop/workbench-client/tailnet-broker-entry.mjs",
+      "sha256": "191a0ebd9293c94b96a20bb318c4b2b1044766c3524007c69d878d972be41fd5"
+    },
+    {
+      "path": "desktop/workbench-client/tailnet-broker.mjs",
+      "sha256": "bef62a581b58dc2ee24b15871656f4e7955894a8defb06689997d874bdedc3e1"
+    },
+    {
+      "path": "desktop/workbench-client/tailnet-runtime.mjs",
+      "sha256": "4b5709e5b2d81cf0e1f40b539405f607486ff30a04ca92cb9b579b30d0b0ffac"
+    },
+    {
+      "path": "desktop/workbench-client/tailnet-session.mjs",
+      "sha256": "554285623885ec44aa5c7dab3640ace408af8d547d13c89263e5303fca4f74b6"
+    },
+    {
+      "path": "desktop/workbench-client/tailscale-serve.mjs",
+      "sha256": "0d0c948175729347a9e6cb6d62f1e080a1173c13e2e2980ff2be18b0a6126f20"
+    },
+    {
+      "path": "desktop/workbench-client/transport.mjs",
+      "sha256": "03337a16a90fc4ad51cf9ded3b135cb8545f7198396587e2c488edf2a78b57d5"
+    },
+    {
+      "path": "desktop/workbench-migration/coordinator.mjs",
+      "sha256": "2fccdef9f5ca2e4825d2f98545522328471c9b3c5c019cfaeda4a1f533b2dbd1"
+    },
+    {
+      "path": "desktop/workbench-migration/local-data-move.mjs",
+      "sha256": "78432f661740d42d47a0c052c41d1efeb4abe9b08cca947f69e597b8bbfb4836"
+    },
+    {
+      "path": "desktop/workbench-migration/routes.mjs",
+      "sha256": "008476e2adf18b3584abec72486a1e42c36592670565de87296a91ac1f991b3c"
+    },
+    {
+      "path": "desktop/workbench-migration/server-entry.mjs",
+      "sha256": "cc8c90404d4b03a88070fa8ec4a2949f76cda81814bc8e164e6a763d4224942b"
+    },
+    {
+      "path": "desktop/workbench-migration/service-adapter.mjs",
+      "sha256": "2c08701dccee097f309e86d3ced8ae6efee1ee7ecdce9b904f68b0354ec88f2b"
+    },
+    {
+      "path": "desktop/workbench-migration/verify-pending-entry.mjs",
+      "sha256": "8fd34582ee8fc7641200c85f56c98195208186f4634ab9cb6c9c0dbcb5f6d948"
+    },
+    {
+      "path": "desktop/extensions/lingtu-desks/extension.json",
+      "sha256": "6b31da159c324b26203a0130d7fd1b4cdb6013fbde4c86a5ecedf2299c4dbeb8"
+    },
+    {
+      "path": "desktop/extensions/lingtu-desks/extension.mjs",
+      "sha256": "e011d1dd42ec09d8cabf19f656fe610a973b554c1e74a389ea15145e1ee30214"
+    },
+    {
+      "path": "desktop/extensions/lingtu-desks/service-manager.mjs",
+      "sha256": "aa5b341c0bd7e839f75232423b057c1fb070cc0bd6635c09d3477b1964eb9cbe"
+    },
+    {
+      "path": "desktop/invoice-module/.pytest_cache/.gitignore",
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd"
+    },
+    {
+      "path": "desktop/invoice-module/.pytest_cache/CACHEDIR.TAG",
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+    },
+    {
+      "path": "desktop/invoice-module/.pytest_cache/README.md",
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/assistant.cpython-311.pyc",
+      "sha256": "ae8c24381538d6cb80b2371173ec60a5ad2edad68da98c754c8ec0b1ae0ec60a"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/console_bridge.cpython-311.pyc",
+      "sha256": "e3e161310f803048bfb9d5cdc396d2efbcb106bc393ee50332a9a993dd322914"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/console_bridge.cpython-312.pyc",
+      "sha256": "96ac9d2a56f0e569f3886df8b12c5e11a560db2615bd0893908ba78d8f2cfb5a"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/gui.cpython-312.pyc",
+      "sha256": "afe911e0523f2a6f536834266d21d225023d8af93c58f42b74ff4a8c6848ae24"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/invoice_watch.cpython-311.pyc",
+      "sha256": "a0b4ad1908a7338446d6939bf51e778b609c8b48196673f28d54e4e412e82260"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/invoice_watch.cpython-312.pyc",
+      "sha256": "c87660131578c9cc77d80c28839b75061221917bb4144a45fb9a6916b3f8b670"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/run.cpython-311.pyc",
+      "sha256": "2106519fd804167c2e1272eeca5103d7503447fe78914cd9c42f3e04f1982b40"
+    },
+    {
+      "path": "desktop/invoice-module/__pycache__/runtime_paths.cpython-312.pyc",
+      "sha256": "52a29d138bdba0f5d2bda251f024fbbdc0630e9a1780838db97f5a1114236826"
+    },
+    {
+      "path": "desktop/invoice-module/模板/新福通通用开票申请单模板.xlsx",
+      "sha256": "cfc7c025e2a854593aeb5a7ab3b5c9856dbe30e7689fa4837025df9d49412650"
+    },
+    {
+      "path": "desktop/invoice-module/.pytest_cache/v/cache/lastfailed",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "desktop/invoice-module/.pytest_cache/v/cache/nodeids",
+      "sha256": "f4ca43d929d9dc1a046dac71589c4f9065978821720f8fa08e1accf3e8370105"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/archive.cpython-312.pyc",
+      "sha256": "637887200cc1fd9a3bcd61f9d58e943fdb31a5ffee8fd0f1bc1c8713b4187c1e"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/collector.cpython-312.pyc",
+      "sha256": "c92553a6688a299db4c4ecf58aa8dea97824d06aa2bebbce842a148ae72e5849"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/columns.cpython-312.pyc",
+      "sha256": "7ee0ebc055f0468a4e89a8502ba62d37d1fed419fd705bbf75a6f1c1b7584dcc"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/credentials.cpython-312.pyc",
+      "sha256": "7328b34a138c328667473ba50fb293c9cc805e225699fcf3e8a0330dd26afb6c"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/demo.cpython-312.pyc",
+      "sha256": "e0ce868463647559b57e8a5a5b27c6b272f5c29b272922d64b0e26487596d735"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/diagnostics.cpython-312.pyc",
+      "sha256": "618199e0bf350c48e4d61d86328ad67ad99dc7bc809939eab573e4856223db4a"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/domain.cpython-312.pyc",
+      "sha256": "0b310595bc3a53efcd44f961064453d0b68d9b560e76aab14060442d027a136a"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/eligibility.cpython-312.pyc",
+      "sha256": "95c1c3b6ff24120170b7ec9b2e40b2c89c3838e09db25276938986e12592694a"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/engine.cpython-312.pyc",
+      "sha256": "0cc765fff6cad3b69530558061fb5ae6c0edfafd1cf956932bc7896a08557850"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/execution.cpython-312.pyc",
+      "sha256": "2b0b9454bd82308fe85ec9bf5062f54b10d74dcc1af38d0ab66e67b6f8067210"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/migration.cpython-312.pyc",
+      "sha256": "b392b34566e1ec6e22493223fae088c6ec18e9948ff781fab11d1455f25236b1"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/native_watch.cpython-312.pyc",
+      "sha256": "ec13c69cbd2926874231cf0f1069d64ecb5c6f525e3cbc1e08081d6f9aaac151"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/providers.cpython-312.pyc",
+      "sha256": "25bb3f0a4fe0c99d9efbeeaed4c64b74a99d03844b18826a113a8d1ae8e7c3e1"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/shop_identity.cpython-312.pyc",
+      "sha256": "4824994c26c92d2b013639dbf62112433a560b253bc86639765ee13ae07d1da3"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/store.cpython-312.pyc",
+      "sha256": "0d4e93f63cb7cf2512fc538f0a0acc5ced6bb1b2d441fa0794399e8603a28526"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/templates.cpython-312.pyc",
+      "sha256": "7de28ffeaa48694da2b6bc8c4252521fecf01b6a16715bb519b24b1ee4b7d96b"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/ui.cpython-312.pyc",
+      "sha256": "cbdad2b8d8f2c0672cfd30d8983014a90fef5eff406ff754c8236471b9b3f902"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/watch_logs.cpython-312.pyc",
+      "sha256": "41d0a512545e13ae680546559c860a7eb719d8d4304f22fe85b7d3097aecaf94"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/watch_log_panel.cpython-312.pyc",
+      "sha256": "d0791d17328695365f23f7d33b9236c6887c88f1b11be47ae22136424553e578"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/watch_runtime.cpython-312.pyc",
+      "sha256": "46402314b8a3a1e885b5326c4f2ebd0bde9cee0d97d5284f13e141009c9f7641"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/worker_streams.cpython-312.pyc",
+      "sha256": "5a1851208a053aea35c628aecc158129aa14698a43020d2e8a452cfa7325dd29"
+    },
+    {
+      "path": "desktop/invoice-module/invoice_assistant/__pycache__/__init__.cpython-312.pyc",
+      "sha256": "9e531c97ead5de2969603999e8031f2259734ad749c484ae0e25a69318f4d960"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/config.cpython-312.pyc",
+      "sha256": "b6eaeaa64b7cc1b4172ee0ae4ba86239e06eca025018d14c10c201458e2bd245"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/exporters.cpython-312.pyc",
+      "sha256": "72a3b67f9f1813e635a139131ed7fce1b06d987df34141ec5c44b3352d92186e"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/fieldmap.cpython-312.pyc",
+      "sha256": "968dfa25f04944da4b6be34705ecf11d372118f10d026db6b407023702113302"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/ledger.cpython-312.pyc",
+      "sha256": "27a92ae37d286ca37e1751eb983762a1a3abc7e91fd58dd3d52c85fda5af7da5"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/pipeline.cpython-312.pyc",
+      "sha256": "6ca2e5b005f4ece7a95e092c95db14ae5a64fd66c8559c53b764a3d92e44df6a"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/readers.cpython-312.pyc",
+      "sha256": "c000a415845a0839fdbd71e79d935eec164486be971bb258aec8949a543aa83c"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/reporter.cpython-312.pyc",
+      "sha256": "069efc8f4a9e90e7ec508a41dc9857b34beb49601f8e344486fc431a9d7225e9"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/requests.cpython-312.pyc",
+      "sha256": "9e3245dd72de3a9c8c90a68eab0984ffe2de54cf83250a45b4f00a1fa04dbbad"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/workflow.cpython-312.pyc",
+      "sha256": "84ad08cb6fbb515b8d87f8f87c4710ce4ef640227cb3d4815bd3edcb315e26aa"
+    },
+    {
+      "path": "desktop/invoice-module/src/__pycache__/__init__.cpython-312.pyc",
+      "sha256": "d4e34eb7ebe450207a7abac10e9b85973dad63654897873df7b86e3fdf7069ba"
+    },
+    {
+      "path": "desktop/shared/ui/base.css",
+      "sha256": "bbe3839241dce8a56083bdb4a6597274f81e9707c1010779d155f1e5f1ee3850"
+    },
+    {
+      "path": "desktop/shared/ui/chart-theme.mjs",
+      "sha256": "c5e21c9fa3a4534884dcdea002fa8f39df55030ac7302ad2bcfd9b604b14ebdb"
+    },
+    {
+      "path": "desktop/shared/ui/components.css",
+      "sha256": "612074411fd7e08292aafa4482a43949c2325d106dd1b4e73cd21148c9e7e680"
+    },
+    {
+      "path": "desktop/shared/ui/icons.svg",
+      "sha256": "8cb17c2bbc5320c78afcc341b3a9e57d519016e0eeb522b23f9c0d23fdea300f"
+    },
+    {
+      "path": "desktop/shared/ui/tokens.css",
+      "sha256": "1cf0bf69e498137b0addb19daf1e697fa45f3936b97fd5adc982fc86597fac5f"
+    }
+  ],
+  "version": "0.11.8",
+  "sourceSnapshot": "working-tree snapshot; includes existing ERP UI changes"
+}

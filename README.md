@@ -103,3 +103,8 @@ v1 支持 macOS 13+、Intel 和 Apple Silicon。安装者需要有效的菜鸟�
 ## License
 
 MIT
+
+
+## Windows 工作台扩展
+
+Windows 五成工作台的完整菜鸟云仓功能现独立维护在 [`windows/workbench`](windows/workbench)。构建、兼容和发布说明见 [Windows 扩展说明](windows/README.md)。原有 macOS Codex 插件仍使用上文的安装与构建方式。
