@@ -50,7 +50,8 @@ try {
     "Installing standalone cloud warehouse: $attempt" | Set-Content C:\Results\stage.txt
     $setup=Start-Process -FilePath $installer -ArgumentList '/S' -WindowStyle Hidden -Wait -PassThru
     if($setup.ExitCode -ne 0){throw "Cloud installation $attempt failed"}
-    $cloudExe=Join-Path $env:LOCALAPPDATA 'Programs\cainiao-cloud-warehouse\CainiaoWarehouse.exe'
+    $cloudExe=Join-Path $env:LOCALAPPDATA 'Programs\CainiaoWarehouse\CainiaoWarehouse.exe'
+    $report.cloudInstallationDirectory=Split-Path $cloudExe
     Stop-OwnedApp $cloudExe
     $cloudProcess=Open-CheckedApp $cloudExe '菜鸟云仓' 60
     if(!(Test-Path -LiteralPath (Join-Path $env:APPDATA 'cainiao-cloud-warehouse\settings.json'))){throw 'Independent cloud profile missing'}
