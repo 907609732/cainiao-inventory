@@ -20,9 +20,10 @@ assert.equal(initialized.status, 0, initialized.stderr);
 fs.writeFileSync(path.join(profile, 'settings.json'), JSON.stringify({runtimeMode: 'server',
   firstRunPending: false, scheduleEnabled: false, monthlySalesEnabled: false, startAtLogin: false}));
 let app;
+const packagedExecutable = process.env.WAREHOUSE_TEST_EXE ? path.resolve(process.env.WAREHOUSE_TEST_EXE) : '';
 try {
-  app = await _electron.launch({executablePath: path.resolve('node_modules/electron/dist/electron.exe'),
-    args: ['.', '--user-data-dir=' + profile, '--managed-module=warehouse'], env});
+  app = await _electron.launch({executablePath: packagedExecutable || path.resolve('node_modules/electron/dist/electron.exe'),
+    args: [...(packagedExecutable ? [] : ['.']), '--user-data-dir=' + profile, '--managed-module=warehouse'], env});
   const page = await app.firstWindow();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -40,7 +41,9 @@ try {
   await page.evaluate(() => window.inventoryApp.getInventory());
   assert.equal(await page.locator('[data-view="attendance"]').count(), 0);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ok: true, views, inventoryRead: true, rendererErrors: errors, isolated: true}));
+  const version = await app.evaluate(({app}) => app.getVersion());
+  assert.equal(version, JSON.parse(fs.readFileSync('package.json')).version);
+  console.log(JSON.stringify({ok: true, version, packaged: Boolean(packagedExecutable), views, inventoryRead: true, rendererErrors: errors, isolated: true}));
 } finally {
   await app?.close();
   fs.rmSync(profile, {recursive: true, force: true});
