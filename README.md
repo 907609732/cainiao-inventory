@@ -4,15 +4,15 @@
 
 > **0.9.3、0.9.4 已撤回，请勿继续安装。** 旧包复用了电商工作台的安装身份，存在覆盖风险。已发生覆盖时不要直接运行旧卸载程序，应先备份并恢复工作台。
 
-当前修复版本为 **0.9.5**。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
+当前修复版本为 **0.9.6**。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
 
 ## 下载
 
-[下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.5/CainiaoWarehouse-Setup-0.9.5-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.5)
+[下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.6/CainiaoWarehouse-Setup-0.9.6-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.6)
 
 ## 两款软件分别安装
 
-| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.9.5 |
+| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.9.6 |
 | --- | --- | --- |
 | 程序目录 | `%LOCALAPPDATA%\Programs\wucheng-ecommerce-erp-v2` | `%LOCALAPPDATA%\Programs\CainiaoWarehouse` |
 | 主程序 | 原工作台主程序 | `CainiaoWarehouse.exe` |
@@ -35,7 +35,7 @@
 
 ## 界面预览（全部为虚构测试数据）
 
-以下截图从 0.9.5 独立版真实界面重新生成，使用 8 个 DEMO 商品和独立临时账本。未读取正式业务数据，未使用用户业务截图；账号为测试占位，密码与密钥均留空。每张图片均标有“演示数据”。
+以下截图从 0.9.6 独立版真实界面重新生成，使用 8 个 DEMO 商品和独立临时账本。未读取正式业务数据，未使用用户业务截图；账号为测试占位，密码与密钥均留空。每张图片均标有“演示数据”。
 
 ### 运行概览
 
@@ -89,6 +89,6 @@ npm run dev
 - [功能说明书](windows/workbench/docs/feature-manual.md)
 - [架构与数据边界](docs/architecture.md)
 - [验收范围](docs/acceptance.md)
-- [0.9.5 修复说明](docs/release-v0.9.5.md)
+- [0.9.6 独立界面说明](docs/release-v0.9.6.md)
 
 源码位于 `windows/workbench`，仅维护 Windows 版本。MIT License。

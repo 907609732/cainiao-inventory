@@ -1,8 +1,9 @@
 {
-  "softwareVersion": "0.9.5",
+  "softwareVersion": "0.9.6",
   "synthetic": true,
   "realDataRead": false,
   "credentialsIncluded": false,
+  "electronHttpRequestsBlocked": true,
   "scheduledTasksEnabled": false,
   "environmentPathsReplacedWithDemoPlaceholders": true,
   "settingsScreenshotIsExcerpt": true,
@@ -28,6 +29,5 @@
     "settings.png"
   ],
   "rendererErrors": [],
-  "fixture": "windows/workbench/tests/capture-demo-ui.mjs",
-  "electronHttpRequestsBlocked": true
+  "fixture": "windows/workbench/tests/capture-demo-ui.mjs"
 }
