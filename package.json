@@ -10,7 +10,8 @@
     "test": "npm --prefix windows/workbench test",
     "test:ui": "npm --prefix windows/workbench run test:ui",
     "docs:features": "npm --prefix windows/workbench run docs:features",
-    "build:extension": "node scripts/build-windows.mjs"
+    "build:extension": "node scripts/build-windows.mjs",
+    "docs:screenshots": "npm --prefix windows/workbench run docs:screenshots"
   },
   "engines": {
     "node": ">=22.0.0"

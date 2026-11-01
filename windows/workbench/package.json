@@ -29,7 +29,8 @@
     "sync:sales:monthly": "node core/sync-cainiao-monthly-sales.js",
     "sync:sales:backfill": "node core/backfill-cainiao-monthly-sales.js --from 2025-08 --to 2026-07",
     "docs:features": "node scripts/export-feature-help.mjs",
-    "test:feature-help": "node --test tests/feature-help-content.test.mjs"
+    "test:feature-help": "node --test tests/feature-help-content.test.mjs",
+    "docs:screenshots": "node tests/capture-demo-ui.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",

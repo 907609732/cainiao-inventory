@@ -51,3 +51,7 @@ node scripts/build-windows.mjs --from-receipt
 两个仓库默认并排存放，其他位置通过 `--erp=完整ERP路径` 指定。`workbench/scripts/workbench-build.mjs` 与 `legacy-suite-build.mjs` 仍由现有 ERP 构建入口引用，属于保留的集成适配器。
 
 扩展产物在 `release/windows/<tag>/`，包括云仓包、按需浏览器包、签名目录和摘要，发布仓库为 `907609732/cainiao-inventory`。扩展标签采用 `warehouse-<宿主版本>-<清单摘要>`；这与独立安装器的 `v0.9.5` 标签不同。主机范围和清单摘要必须按实际构建回执核对，构建成功不代表安装或正式数据迁移通过。
+
+## 公开 UI 演示
+
+[界面与功能演示](../docs/ui-guide.md)使用独立虚构账本。仓库根目录运行 `npm run docs:screenshots` 可重新生成截图；不得改为读取正式数据库或账号目录。
