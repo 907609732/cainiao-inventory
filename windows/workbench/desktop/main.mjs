@@ -851,7 +851,7 @@ function configureLoginItem(settings) {
   app.setLoginItemSettings({
     openAtLogin,
     enabled: openAtLogin,
-    name: "云仓库存同步",
+    name: "菜鸟云仓",
     path: process.execPath,
     args: [...componentLaunchArgs, ...(managedCloud ? ['--hidden','--managed-module=warehouse','--user-data-dir='+app.getPath('userData')] : ['--hidden'])]
   });

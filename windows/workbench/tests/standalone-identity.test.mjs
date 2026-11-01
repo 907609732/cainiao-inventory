@@ -5,8 +5,14 @@ import os from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import * as locations from '../desktop/shared/workbench-location.mjs';
+import {createRuntimeCapabilities} from '../desktop/shared/runtime-contract.mjs';
 
 const require = createRequire(import.meta.url);
+test('external clients identify standalone cloud as a separate application', () => {
+  const value=createRuntimeCapabilities({version:'0.9.5',packaged:true,executable:'CainiaoWarehouse.exe'});
+  assert.equal(value.application.name,'cainiao-cloud-warehouse');
+  assert.equal(value.application.source.repository,'https://github.com/907609732/cainiao-inventory');
+});
 test('standalone installer cannot use workbench installation identity or folder', () => {
   const config = require('../build/electron-builder.config.cjs');
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url)));
