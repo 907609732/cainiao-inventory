@@ -37,7 +37,7 @@ import { createUpdater } from "./updater.mjs";
 import { terminateProcessTree } from "./shared/task-process.mjs";
 import { mergeScheduledTasks, queueAfterTaskResult } from "./shared/task-schedule.mjs";
 import { externalLink } from "./shared/external-links.mjs";
-import { CHANGELOG } from './shared/changelog.mjs';
+import { CHANGELOG, STANDALONE_CHANGELOG } from './shared/changelog.mjs';
 import { defaultBackfillRange, latestCompleteMonth, shiftMonth } from "../core/erp/monthly-sales-dashboard.js";
 import brandingModule from "./shared/branding.cjs";
 import {createWarehouseAgentAdapter} from './workbench/warehouse-agent.mjs';
@@ -57,6 +57,7 @@ let warehouseAgent;
 const workbenchManaged = Boolean(componentContext) || process.env.LINGTU_MANAGED_MODULE === '1' || process.argv.includes('--managed-module=warehouse');
 
 let startupLocation;
+const locationErrorTitle = workbenchManaged ? '工作台数据位置需要核对' : '菜鸟云仓数据位置需要核对';
 try {
   startupLocation = getWarehouseLocation(app.getPath("appData"), {
     managed: workbenchManaged,
@@ -64,10 +65,10 @@ try {
   });
 } catch (error) {
   if (process.argv.includes("--cli") || process.argv.includes("--mcp-stdio")) {
-    process.stderr.write("工作台数据位置需要核对：" + error.message + "\n");
+    process.stderr.write(locationErrorTitle + '：' + error.message + "\n");
   } else {
     await app.whenReady();
-    dialog.showErrorBox("工作台数据位置需要核对", error.message);
+    dialog.showErrorBox(locationErrorTitle, error.message);
   }
   process.exit(1);
 }
@@ -141,7 +142,7 @@ function runtimeMode() {
 }
 
 async function remoteRequest() {
-  throw new Error('旧版远程连接已停用，请从工作台 Tailscale 入口打开云仓');
+  throw new Error(workbenchManaged ? '旧版远程连接已停用，请从工作台 Tailscale 入口打开云仓' : '独立版不使用旧版远程连接，请在本机配置菜鸟账号后重试');
 }
 
 function notifyRemoteConnection(connected, message, health = null) {
@@ -954,12 +955,12 @@ async function configureRemoteService() {
 }
 
 function openRemoteLogin() {
-  throw new Error('连接与登录由工作台 Tailscale 设置统一管理');
+  throw new Error(workbenchManaged ? '连接与登录由工作台 Tailscale 设置统一管理' : '请在云仓设置中使用“登录 / 刷新菜鸟状态”完成本机登录');
 }
 
 ipcMain.handle("settings:get", async () => publicSettings());
 ipcMain.handle("branding:get", () => currentBranding());
-ipcMain.handle("app:about", () => ({ version: componentVersion, build: readBuildInfo(), changelog: CHANGELOG }));
+ipcMain.handle("app:about", () => ({ version: componentVersion, build: readBuildInfo(), changelog: workbenchManaged ? CHANGELOG : STANDALONE_CHANGELOG }));
 ipcMain.handle("secrets:get-editable", async (event) => {
   if (event.sender !== mainWindow?.webContents) throw new Error("无权读取敏感设置");
   if (runtimeMode() === "client") return {};
@@ -985,7 +986,7 @@ ipcMain.handle("settings:save", async (_event, payload = {}) => {
 });
 ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
   const section = String(payload.section || "");
-  if(section==='runtime')throw Error('连接与运行角色由工作台 Tailscale 设置统一管理');
+  if(section==='runtime')throw Error(workbenchManaged ? '连接与运行角色由工作台 Tailscale 设置统一管理' : '独立版使用本机运行模式，无需配置远程运行角色');
   const validators = {
     runtime: validateRuntimeSettings,
     account: validateCainiaoSettings,

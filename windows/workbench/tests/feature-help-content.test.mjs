@@ -9,6 +9,12 @@ const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'desktop/renderer/feature-help-content.js'), 'utf8'), context);
 const guides = context.window.erpFeatureHelpContent;
 
+test('standalone help does not describe a required external workbench or server', () => {
+  for (const [view,guide] of Object.entries(guides)) {
+    assert.doesNotMatch(JSON.stringify(guide), /工作台|Tailscale|主服务器|外层|员工/, view);
+  }
+});
+
 test('every navigable view has separate usable manual and principle content', () => {
   assert.deepEqual(Object.keys(guides).sort(), ['dashboard', 'inventory', 'sales', 'settings'].sort());
   for (const [view, guide] of Object.entries(guides)) {

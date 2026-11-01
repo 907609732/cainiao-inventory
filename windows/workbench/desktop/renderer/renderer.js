@@ -1,11 +1,8 @@
 const api = window.inventoryApp;
 const managedWarehouse = new URLSearchParams(location.search).get('module') === 'warehouse';
 document.title = managedWarehouse ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓';
-if (!managedWarehouse) {
-  document.title = '菜鸟云仓';
-  document.querySelectorAll('.lt-loading__brand, .eyebrow').forEach(el => el.textContent = '菜鸟云仓');
-  document.querySelector('.daily-connection-card')?.classList.add('hidden');
-}
+document.querySelectorAll('.lt-loading__brand, .hero .eyebrow').forEach(el => el.textContent = managedWarehouse ? '五成电子商务工作台' : '菜鸟云仓');
+document.querySelectorAll('[data-managed-only]').forEach(el => el.classList.toggle('hidden', !managedWarehouse));
 document.body.classList.toggle('managed-cloud', managedWarehouse);
 document.getElementById('backHome').textContent = managedWarehouse ? '返回工作台' : '关闭云仓窗口';
 if (managedWarehouse) document.querySelector('#maintenanceCard .settings-card-heading p').textContent = '登录状态、云仓数据与日志目录。模块更新和后台服务统一在工作台管理。';
@@ -241,7 +238,7 @@ function applyInventoryReport(report) {
 
 async function loadInventory() {
   byId("refreshInventory").disabled = true;
-  byId("inventoryMessage").textContent = activeRuntimeMode === "client" ? "正在读取主服务器库存…" : "正在读取本地已校验库存…";
+  byId("inventoryMessage").textContent = activeRuntimeMode === "client" ? "正在读取远程服务库存…" : "正在读取本地已校验库存…";
   try {
     applyInventoryReport(await api.getInventory());
   } catch (error) {
@@ -485,7 +482,7 @@ function applyUpdateState(state) {
 function applyRemoteConnection(state) {
   if (activeRuntimeMode !== "client") return;
   const connected = Boolean(state?.connected);
-  byId("loginState").textContent = connected ? "主服务器已连接" : "主服务器未登录";
+  byId("loginState").textContent = connected ? "远程服务已连接" : "远程服务未登录";
   byId("statusBadge").textContent = connected ? "已连接" : "未连接";
   byId("statusBadge").className = `status ${connected ? "ready" : ""}`;
   if (state?.message) appendLog({ line: state.message });
@@ -501,7 +498,7 @@ function hydrateSettings(settings) {
   byId("dingtalkClientSecret").placeholder = settings.secretFlags.dingtalkClientSecret ? "Client Secret 已加密保存" : "请输入 Client Secret";
   byId("dingtalkWebhook").placeholder = settings.secretFlags.dingtalkWebhook ? "Webhook 已加密保存" : "请输入 Webhook";
   byId("dingtalkWebhookSecret").placeholder = settings.secretFlags.dingtalkWebhookSecret ? "加签密钥已加密保存" : "可选";
-  byId("loginState").textContent = settings.runtimeMode === "client" ? "正在检测主服务器" : (hasAccount(settings) ? "凭据已保存" : "待配置");
+  byId("loginState").textContent = settings.runtimeMode === "client" ? "正在检测远程服务" : (hasAccount(settings) ? "凭据已保存" : "待配置");
   setConfigState("accountConfigState", hasAccount(settings));
   setConfigState("robotConfigState", hasRobot(settings));
   toggleDeliveryFields();
@@ -522,7 +519,7 @@ async function saveSection(section, settings, secrets, messageId) {
     hydrateSettings(saved);
     hydrateSecrets(await api.getEditableSecrets());
     try { applyState(await api.getState()); }
-    catch (error) { appendLog({ line: `主服务器尚未连接：${error.message}` }); }
+    catch (error) { appendLog({ line: `远程服务尚未连接：${error.message}` }); }
     showSaveResult(messageId, "保存成功");
   } catch (error) {
     showSaveResult(messageId, error.message, true);
@@ -538,9 +535,9 @@ async function load() {
   hydrateAbout(about);
   try {
     applyState(await api.getState());
-    if (settings.runtimeMode === "client") applyRemoteConnection({ connected: true, message: "主服务器连接成功" });
+    if (settings.runtimeMode === "client") applyRemoteConnection({ connected: true, message: "远程服务连接成功" });
   } catch (error) {
-    appendLog({ line: `主服务器尚未连接：${error.message}` });
+    appendLog({ line: `远程服务尚未连接：${error.message}` });
     applyRemoteConnection({ connected: false, message: error.message });
   }
   if (!managedWarehouse) applyUpdateState(await api.getUpdateState());
@@ -554,9 +551,9 @@ async function refreshSettings() {
   hydrateSecrets(await api.getEditableSecrets());
   try {
     applyState(await api.getState());
-    if (settings.runtimeMode === "client") applyRemoteConnection({ connected: true, message: "主服务器连接成功" });
+    if (settings.runtimeMode === "client") applyRemoteConnection({ connected: true, message: "远程服务连接成功" });
   } catch (error) {
-    appendLog({ line: `主服务器尚未连接：${error.message}` });
+    appendLog({ line: `远程服务尚未连接：${error.message}` });
     applyRemoteConnection({ connected: false, message: error.message });
   }
 }
@@ -568,7 +565,9 @@ function navigateView(view) {
   document.querySelectorAll('[data-view-panel]').forEach(panel => panel.classList.toggle('hidden', panel.dataset.viewPanel !== view));
   document.querySelector('.view-tabs').classList.remove('hidden');
   document.querySelector('h1').textContent = titles[view];
-  document.querySelector('.subtitle').textContent = view === 'settings' ? '管理菜鸟账号、同步计划与钉钉提醒；连接统一由工作台设置。' : '采集、校验并通过企业应用机器人发送到钉钉。';
+  document.querySelector('.subtitle').textContent = view === 'settings'
+    ? (managedWarehouse ? '管理菜鸟账号、同步计划与钉钉提醒；连接统一由工作台设置。' : '管理菜鸟账号、同步计划、钉钉提醒和本机软件维护。')
+    : '采集、校验并通过企业应用机器人发送到钉钉。';
   if (view !== 'settings') hideAllSecrets();
   if (view === 'inventory') loadInventory();
   if (view === 'sales') {

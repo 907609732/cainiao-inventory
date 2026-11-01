@@ -19,7 +19,7 @@
 <body data-loading-logo="../assets/lingtu-icon.png">
 <div class="lt-loading" data-variant="full" id="warehouseLoading" role="status" aria-live="polite" aria-busy="true">
   <div class="lt-loading__logo"><img src="../assets/lingtu-icon.png" alt="" draggable="false"></div>
-  <div class="lt-loading__brand">五成电子商务工作台</div>
+  <div class="lt-loading__brand">菜鸟云仓</div>
   <div class="lt-loading__subtitle">菜鸟云仓同步</div>
   <progress class="lt-loading__progress" aria-label="正在读取云仓配置…"></progress>
   <div class="lt-loading__status">正在读取云仓配置…</div>
@@ -30,13 +30,13 @@
       <div class="hero-brand">
         <img class="hero-logo" src="../assets/lingtu-icon.png" alt="灵兔云仓" width="72" height="72">
         <div>
-        <p class="eyebrow">五成电子商务工作台</p>
+        <p class="eyebrow">菜鸟云仓</p>
         <h1>云仓同步</h1>
         <p class="subtitle">采集云仓库存、查看库存与销售趋势。</p>
         </div>
       </div>
       <div class="hero-actions" aria-label="页面导航">
-        <button class="btn" id="backHome" type="button">返回工作台</button>
+        <button class="btn" id="backHome" type="button">关闭云仓窗口</button>
       </div>
     </header>
 
@@ -185,7 +185,7 @@
         <div class="settings-actions"><button class="btn" id="featureManualButton" type="button" aria-haspopup="dialog" aria-controls="featureHelpDialog" title="使用说明与技术原理">使用说明</button></div>
       </section>
 
-      <div class="daily-connection-card"><h3>连接由工作台统一管理</h3><p>Tailscale 连接与服务器统一在外层工作台设置。采集任务在主服务器执行；员工使用自己的工作台身份访问。</p><button class="btn" type="button" id="dailyBackToWorkbench">返回工作台设置连接</button><p id="legacyConnectionNotice" class="daily-error-note hidden">检测到旧版客户端配置，请返回工作台使用 Tailscale 连接；此处不再设置旧版远程地址。</p></div>
+      <div class="daily-connection-card hidden" data-managed-only><h3>连接由工作台统一管理</h3><p>Tailscale 连接与服务器统一在外层工作台设置。采集任务在主服务器执行；员工使用自己的工作台身份访问。</p><button class="btn" type="button" id="dailyBackToWorkbench">返回工作台设置连接</button><p id="legacyConnectionNotice" class="daily-error-note hidden">检测到旧版客户端配置，请返回工作台使用 Tailscale 连接；此处不再设置旧版远程地址。</p></div>
 
       <form id="accountSettingsForm" class="settings-card server-only-settings">
         <div class="settings-card-heading">
@@ -248,7 +248,7 @@
       </form>
 
       <form id="automationSettingsForm" class="settings-card server-only-settings">
-        <div class="settings-card-heading"><div><h3>自动任务</h3><p>由主服务器执行每日采集与群同步。请保持服务器在线。</p></div></div>
+        <div class="settings-card-heading"><div><h3>自动任务</h3><p>由本机程序执行每日采集与消息发送，请保持软件和电脑运行。</p></div></div>
         <div class="form-grid">
           <label>每天执行时间<input id="scheduleTime" type="time" required></label>
           <label>每月销量执行时间<input id="monthlySalesTime" type="time" required></label>
