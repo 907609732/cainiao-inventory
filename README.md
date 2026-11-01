@@ -4,17 +4,17 @@
 
 > **0.9.3、0.9.4 已撤回，请勿继续安装。** 旧包复用了电商工作台的安装身份，存在覆盖风险。已发生覆盖时不要直接运行旧卸载程序，应先备份并恢复工作台。
 
-当前版本为 **0.9.6**，已通过全新安装、0.9.5 升级及工作台共存验收。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
+当前版本为 **0.9.7**，已通过全新安装、0.9.6 升级及工作台共存验收。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
 
-源码中的 0.9.7 已精简设置页，并新增飞书、企业微信、邮箱和 Telegram 多渠道通知，支持同时启用；日期偏旧但其他校验通过时，可二次确认后[特殊发送](docs/date-exception-send.md)。尚未发布安装包，见[配置及验证范围](docs/notifications.md)。
+0.9.7 已精简设置页，并新增飞书、企业微信、邮箱和 Telegram 多渠道通知，支持同时启用；日期偏旧但其他校验通过时，可二次确认后[特殊发送](docs/date-exception-send.md)。见[配置及验证范围](docs/notifications.md)。
 
 ## 下载
 
-[下载 0.9.6 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.6/CainiaoWarehouse-Setup-0.9.6-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.6)
+[下载 0.9.7 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.7/CainiaoWarehouse-Setup-0.9.7-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.7)
 
 ## 两款软件分别安装
 
-| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.9.6 |
+| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.9.7 |
 | --- | --- | --- |
 | 程序目录 | `%LOCALAPPDATA%\Programs\wucheng-ecommerce-erp-v2` | `%LOCALAPPDATA%\Programs\CainiaoWarehouse` |
 | 主程序 | 原工作台主程序 | `CainiaoWarehouse.exe` |
@@ -37,7 +37,7 @@
 
 ## 界面预览（全部为虚构测试数据）
 
-以下截图从 0.9.7 开发版真实界面重新生成，使用 8 个 DEMO 商品和独立临时账本。未读取正式业务数据，未使用用户业务截图；账号为测试占位，密码与密钥均留空。每张图片均标有“演示数据”。
+以下截图从 0.9.7 真实界面重新生成，使用 8 个 DEMO 商品和独立临时账本。未读取正式业务数据，未使用用户业务截图；账号为测试占位，密码与密钥均留空。每张图片均标有“演示数据”。
 
 ### 运行概览
 
@@ -79,7 +79,7 @@ npm run dev
 
 ## 发布前验证
 
-140 项测试、源码与打包界面检查及 Windows CI 通过。Windows Sandbox 使用真实工作台安装器完成共存测试：安装和重复安装云仓后，工作台文件、快捷方式、卸载项和数据绑定保持不变；卸载云仓后工作台仍可启动。修复后的本机也已核对两款软件同时运行。
+163 项回归测试、源码与打包界面检查及 Windows CI 通过。[安装共存验收](https://github.com/907609732/cainiao-inventory/actions/runs/41337977693) 使用一次性 GitHub Windows 环境和真实工作台安装器：全新安装、从 0.9.6 升级和重复安装云仓后，工作台程序、快捷方式、卸载项和测试数据绑定保持不变；卸载云仓后工作台仍可启动。升级测试保留虚构测试文件。
 
 真实菜鸟采集、钉钉投递和账本迁移未在本轮测试中执行，安装器未作 Authenticode 代码签名。
 
@@ -91,6 +91,7 @@ npm run dev
 - [功能说明书](windows/workbench/docs/feature-manual.md)
 - [架构与数据边界](docs/architecture.md)
 - [验收范围](docs/acceptance.md)
+- [0.9.7 发布与测试记录](docs/release-v0.9.7.md)
 - [0.9.6 独立界面说明](docs/release-v0.9.6.md)
 
 源码位于 `windows/workbench`，仅维护 Windows 版本。MIT License。
