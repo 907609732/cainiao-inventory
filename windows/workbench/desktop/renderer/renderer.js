@@ -1,5 +1,11 @@
 const api = window.inventoryApp;
 const managedWarehouse = new URLSearchParams(location.search).get('module') === 'warehouse';
+document.title = managedWarehouse ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓';
+if (!managedWarehouse) {
+  document.title = '菜鸟云仓';
+  document.querySelectorAll('.lt-loading__brand, .eyebrow').forEach(el => el.textContent = '菜鸟云仓');
+  document.querySelector('.daily-connection-card')?.classList.add('hidden');
+}
 document.body.classList.toggle('managed-cloud', managedWarehouse);
 document.getElementById('backHome').textContent = managedWarehouse ? '返回工作台' : '关闭云仓窗口';
 if (managedWarehouse) document.querySelector('#maintenanceCard .settings-card-heading p').textContent = '登录状态、云仓数据与日志目录。模块更新和后台服务统一在工作台管理。';
@@ -525,7 +531,7 @@ async function saveSection(section, settings, secrets, messageId) {
 
 async function load() {
   const [settings, secrets, integration, branding, about] = await Promise.all([api.getSettings(), api.getEditableSecrets(), api.getIntegration(), api.getBranding(), api.getAbout()]);
-  document.title = '云仓同步 · 五成电子商务工作台';
+  document.title = managedWarehouse ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓';
   hydrateSettings(settings);
   hydrateSecrets(secrets);
   hydrateIntegration(integration);

@@ -1,4 +1,4 @@
-const BASE_PRODUCT_NAME = "云仓库存同步";
+const BASE_PRODUCT_NAME = "菜鸟云仓";
 
 function normalizeBuildChannel(value) {
   const channel = String(value || "").trim().toLowerCase();

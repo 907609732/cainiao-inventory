@@ -88,3 +88,11 @@ export function getWorkbenchLocation(defaultAppData=process.env.APPDATA||os.home
 export function defaultIntegrationRegistryPath(defaultAppData=process.env.APPDATA||os.homedir(),options={}){
   return getWorkbenchLocation(defaultAppData,options).registryFile;
 }
+
+// Standalone cloud warehouse is a different application. Only an explicit
+// workbench-managed component may adopt the host's profile or registry.
+export function getWarehouseLocation(defaultAppData,{managed=false,...options}={}){
+  if(managed)return getWorkbenchLocation(defaultAppData,options);
+  const profile=options.explicitProfile?path.resolve(options.explicitProfile):path.join(defaultAppData,'cainiao-cloud-warehouse');
+  return {profile,registryFile:path.join(profile,'integrations','registry.json'),source:'standalone'};
+}

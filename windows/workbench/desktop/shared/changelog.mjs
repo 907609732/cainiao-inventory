@@ -1,4 +1,5 @@
 export const CHANGELOG = [
+ {version:'0.9.5',date:'2026-11-01',title:'修复与电商工作台的安装身份冲突',changes:['菜鸟云仓使用独立安装标识、程序目录和快捷方式','独立版不再读取工作台默认数据目录或位置注册表','新增工作台与云仓同时安装及单独卸载的回归检查']},
  {version:'0.9.4',date:'2026-11-01',title:'Windows 独立源码整理',changes:['移除 macOS 插件环境和旧 ERP 客户端残留','统一 Windows 源码启动、测试和安装器构建入口']},
  {version:'0.9.3',date:'2026-11-01',title:'独立云仓 Windows 安装版',changes:['从独立菜鸟云仓源码打包 Windows 安装器','安装包与在线更新统一使用 cainiao-inventory GitHub 仓库']},
  {version:'0.8.0',date:'2026-10-24',title:'统一私网工作台接口',changes:['云仓业务通过 Tailscale 工作台网关接入，保留主机采集和本机密钥','远程操作区分真实成员、权限、任务执行权并记录审计','支持只读离线快照、旧账本两次确认迁移及一致性校验']},

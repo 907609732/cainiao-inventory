@@ -13,7 +13,8 @@ function preparedChannel() {
 const branding = buildBranding(preparedChannel());
 
 module.exports = {
-  appId: "com.wucheng.ecommerce.erp.v2",
+  appId: "com.wucheng.cainiao.warehouse",
+  executableName: "CainiaoWarehouse",
   productName: branding.productName,
   publish: [{
     provider: "github",
@@ -22,7 +23,7 @@ module.exports = {
     private: false,
     releaseType: "release"
   }],
-  artifactName: `CloudWarehouseInventorySync${branding.artifactMarker}-Setup-\${version}-\${arch}.\${ext}`,
+  artifactName: `CainiaoWarehouse${branding.artifactMarker}-Setup-\${version}-\${arch}.\${ext}`,
   directories: {
     output: "dist",
     buildResources: "build"
@@ -53,7 +54,7 @@ module.exports = {
   },
   nsis: {
     oneClick: false,
-    allowToChangeInstallationDirectory: true,
+    allowToChangeInstallationDirectory: false,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: branding.productName,

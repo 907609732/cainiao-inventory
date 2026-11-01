@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import {randomUUID} from 'node:crypto';
-import {getWorkbenchLocation,workbenchLocationFile} from '../desktop/shared/workbench-location.mjs';
+import {getWarehouseLocation,workbenchLocationFile} from '../desktop/shared/workbench-location.mjs';
 import {requestedUserDataPath} from '../desktop/shared/user-data-path.mjs';
 
 const source=fs.readFileSync(new URL('../desktop/main.mjs',import.meta.url),'utf8');
@@ -22,36 +22,28 @@ function fixture(t){
 }
 async function run(f,{args=[],env={}}={}){
   const calls={mkdir:[],setPath:[],dialogs:[],errors:[]},context={
+    workbenchManaged:env.LINGTU_MANAGED_MODULE==='1'||args.includes('--managed-module=warehouse'),
     path,fs:{mkdirSync:(file,options)=>{calls.mkdir.push(file);return fs.mkdirSync(file,options);}},
     app:{getPath:name=>{assert.equal(name,'appData');return f.appData;},whenReady:async()=>{},setPath:(name,file)=>calls.setPath.push({name,file})},
     dialog:{showErrorBox:(...args)=>calls.dialogs.push(args)},
     process:{argv:['fixture.exe',...args],env:{...env},stderr:{write:text=>calls.errors.push(text)},exit:code=>{throw Object.assign(Error('fixture app exited'),{code:'APP_EXIT',exitCode:code,calls});}},
-    requestedUserDataPath,getWorkbenchLocation:(appData,options)=>getWorkbenchLocation(appData,{...options,home:f.home})
+    requestedUserDataPath,getWarehouseLocation:(appData,options)=>getWarehouseLocation(appData,{...options,home:f.home})
   };
   const result=await bootstrap.runInNewContext(context);return {result,calls,env:context.process.env};
 }
 
-test('original standalone GUI resolves the adopted physical host profile and registry',async t=>{
-  const f=fixture(t),r=await run(f);assert.equal(r.result.profile,f.profile);assert.equal(r.result.registry,f.registry);assert.deepEqual(r.calls.setPath,[{name:'userData',file:f.profile}]);assert.equal(fs.existsSync(f.appData),false);
+test('standalone GUI uses its own profile even with an adopted workbench',async t=>{
+ const f=fixture(t),r=await run(f),profile=path.join(f.appData,'cainiao-cloud-warehouse');assert.equal(r.result.profile,profile);assert.equal(r.result.registry,path.join(profile,'integrations','registry.json'));assert.deepEqual(r.calls.setPath,[{name:'userData',file:profile}]);
 });
-
-test('original source CLI and MCP inherit the same adopted host location',async t=>{
-  const f=fixture(t);for(const mode of ['--cli','--mcp-stdio']){const r=await run(f,{args:[mode]});assert.equal(r.result.profile,f.profile);assert.equal(r.env.LINGTU_REGISTRY_PATH,f.registry);assert.equal(r.calls.errors.length,0);assert.equal(r.calls.dialogs.length,0);}
+test('standalone CLI and MCP cannot inherit the workbench registry',async t=>{
+ const f=fixture(t);for(const mode of ['--cli','--mcp-stdio']){const r=await run(f,{args:[mode],env:{LINGTU_REGISTRY_PATH:f.registry}});assert.equal(r.result.profile,path.join(f.appData,'cainiao-cloud-warehouse'));assert.notEqual(r.result.registry,f.registry);assert.equal(r.calls.errors.length,0);}
 });
-
-test('managed warehouse explicit profile and explicit registry keep precedence over an unrelated invalid marker',async t=>{
-  const f=fixture(t),managed=path.join(f.root,'managed-data'),explicitRegistry=path.join(f.root,'explicit-registry.json');fs.mkdirSync(managed);fs.writeFileSync(workbenchLocationFile(f.home),'{bad');
-  const r=await run(f,{args:['--managed-module=warehouse','--user-data-dir='+managed],env:{LINGTU_REGISTRY_PATH:explicitRegistry}});assert.equal(r.result.profile,managed);assert.equal(r.env.LINGTU_REGISTRY_PATH,explicitRegistry);assert.equal(r.calls.dialogs.length,0);assert.equal(r.calls.errors.length,0);
+test('managed warehouse explicit profile and registry take precedence over an invalid marker',async t=>{
+ const f=fixture(t),profile=path.join(f.root,'managed'),registry=path.join(f.root,'explicit-registry.json');fs.mkdirSync(profile);fs.writeFileSync(workbenchLocationFile(f.home),'{bad');const r=await run(f,{args:['--managed-module=warehouse','--user-data-dir='+profile],env:{LINGTU_REGISTRY_PATH:registry}});assert.equal(r.result.profile,profile);assert.equal(r.result.registry,registry);
 });
-
-test('invalid or changed bound marker exits before creating a default profile for GUI, CLI and MCP',async t=>{
-  const f=fixture(t);fs.unlinkSync(path.join(f.profile,'workbench-server','identity.json'));
-  for(const args of [[],['--cli','status'],['--mcp-stdio']]){
-    await assert.rejects(run(f,{args}),error=>{assert.equal(error.code,'APP_EXIT');assert.equal(error.exitCode,1);assert.deepEqual(error.calls.mkdir,[]);assert.deepEqual(error.calls.setPath,[]);assert.equal(error.calls.dialogs.length,args.length?0:1);assert.equal(error.calls.errors.length,args.length?1:0);return true;});
-  }
-  assert.equal(fs.existsSync(f.appData),false);
+test('standalone ignores invalid host binding while managed warehouse still fails closed',async t=>{
+ const f=fixture(t);fs.unlinkSync(path.join(f.profile,'workbench-server','identity.json'));
+ for(const args of [[],['--cli','status'],['--mcp-stdio']]){const r=await run(f,{args});assert.equal(r.result.profile,path.join(f.appData,'cainiao-cloud-warehouse'));}
+ for(const args of [['--managed-module=warehouse'],['--managed-module=warehouse','--cli','status'],['--managed-module=warehouse','--mcp-stdio']])await assert.rejects(run(f,{args}),e=>{assert.equal(e.code,'APP_EXIT');assert.deepEqual(e.calls.mkdir,[]);assert.deepEqual(e.calls.setPath,[]);return true;});
 });
-
-test('ordinary new standalone installs without a marker retain the prior default path',async t=>{
-  const f=fixture(t);fs.unlinkSync(workbenchLocationFile(f.home));const r=await run(f);assert.equal(r.result.profile,path.join(f.appData,'wucheng-ecommerce-erp-v2'));assert.equal(r.env.LINGTU_REGISTRY_PATH,path.join(f.appData,'LingtuIntegrations','registry.json'));
-});
+test('explicit managed component resolves the original workbench binding',async t=>{const f=fixture(t),r=await run(f,{args:['--managed-module=warehouse']});assert.equal(r.result.profile,f.profile);assert.equal(r.result.registry,f.registry);});

@@ -19,12 +19,12 @@ const { buildBranding } = brandingModule;
 
 test("only formal release builds use the unmarked product name", () => {
   assert.deepEqual(buildBranding("release"), {
-    channel: "release", official: true, productName: "云仓库存同步", artifactMarker: ""
+    channel: "release", official: true, productName: "菜鸟云仓", artifactMarker: ""
   });
   for (const channel of ["test", "beta", "development", "unknown"]) {
     const branding = buildBranding(channel);
     assert.equal(branding.official, false);
-    assert.equal(branding.productName, "云仓库存同步（测试版）");
+    assert.equal(branding.productName, "菜鸟云仓（测试版）");
     assert.equal(branding.artifactMarker, "-Test");
   }
 });

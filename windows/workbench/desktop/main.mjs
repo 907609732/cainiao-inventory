@@ -28,7 +28,7 @@ import { diagnosticHealth, redactDiagnosticValue, sanitizeDiagnosticText, search
 import { createRuntimeCapabilities } from "./shared/runtime-contract.mjs";
 import { discoverExtensions, invokeTrustedExtension, normalizeTrustedExtensionIds } from "./shared/extensions.mjs";
 import { requestedUserDataPath } from "./shared/user-data-path.mjs";
-import { getWorkbenchLocation } from "./shared/workbench-location.mjs";
+import { getWarehouseLocation } from "./shared/workbench-location.mjs";
 import { readCainiaoInventory } from "./shared/inventory-store.mjs";
 import {createWarehouseDaily,expectedInventoryDate} from '../core/erp/warehouse-daily.js';
 
@@ -54,10 +54,12 @@ const agentManaged=process.env.LINGTU_AGENT_MANAGED==='1';
 const businessOnly=process.env.LINGTU_BUSINESS_ONLY==='1';
 const testLedger=process.env.LINGTU_TEST_LEDGER==='1';
 let warehouseAgent;
+const workbenchManaged = Boolean(componentContext) || process.env.LINGTU_MANAGED_MODULE === '1' || process.argv.includes('--managed-module=warehouse');
 
 let startupLocation;
 try {
-  startupLocation = getWorkbenchLocation(app.getPath("appData"), {
+  startupLocation = getWarehouseLocation(app.getPath("appData"), {
+    managed: workbenchManaged,
     explicitProfile: requestedUserDataPath(process.argv), registryFile: process.env.LINGTU_REGISTRY_PATH
   });
 } catch (error) {
@@ -70,7 +72,8 @@ try {
   process.exit(1);
 }
 const stableUserDataPath = startupLocation.profile;
-if (!process.env.LINGTU_REGISTRY_PATH) process.env.LINGTU_REGISTRY_PATH = startupLocation.registryFile;
+if (!workbenchManaged || !process.env.LINGTU_REGISTRY_PATH) process.env.LINGTU_REGISTRY_PATH = startupLocation.registryFile;
+if (!workbenchManaged) delete process.env.LINGTU_AUTH_PROFILE_DIR;
 fs.mkdirSync(stableUserDataPath, { recursive: true });
 app.setPath("userData", stableUserDataPath);
 // Business files may move without changing Chromium's encrypted login profile.
@@ -363,7 +366,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 680,
-    title: '云仓同步 · 五成电子商务工作台',
+    title: workbenchManaged ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓',
     icon: path.join(desktopDir, "assets", "lingtu-icon.png"),
     backgroundColor: "#f4f1ec",
     show: !process.argv.includes("--hidden"),
@@ -1228,7 +1231,7 @@ app.on("window-all-closed", () => {
 });
 
 app.whenReady().then(async () => {
-  app.setAppUserModelId("com.diankouwujin.cainiao.inventory");
+  app.setAppUserModelId(workbenchManaged ? "com.diankouwujin.cainiao.inventory" : "com.wucheng.cainiao.warehouse");
   ensureWorkspace();
   installBundledDesks({source:path.join(desktopDir,'extensions','lingtu-desks'),workspace:appDataDir(),settingsPath:settingsPath()});
   if (cliMode) {
