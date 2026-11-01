@@ -2,7 +2,7 @@
 
 0.9.3、0.9.4 已因安装身份冲突撤回。安装修复版前，已发生覆盖的电脑应先恢复工作台；不要直接运行旧云仓卸载程序。
 
-当前版本为独立云仓安装版，GitHub 发布状态为正式 Release（Latest）。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.6)。
+当前源码为 0.9.6，已完成界面文案清理与打包界面测试，安装共存验收待完成，尚未发布。已发布的独立云仓安装版为 0.9.5（Latest）：[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.5)。
 
 ## 开发启动
 

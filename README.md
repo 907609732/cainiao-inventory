@@ -4,11 +4,11 @@
 
 > **0.9.3、0.9.4 已撤回，请勿继续安装。** 旧包复用了电商工作台的安装身份，存在覆盖风险。已发生覆盖时不要直接运行旧卸载程序，应先备份并恢复工作台。
 
-当前修复版本为 **0.9.6**。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
+当前已发布修复版本为 **0.9.5**；源码与演示界面已更新至 **0.9.6**，安装共存验收待完成。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
 
 ## 下载
 
-[下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.6/CainiaoWarehouse-Setup-0.9.6-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.6)
+[下载已发布的 0.9.5 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.5/CainiaoWarehouse-Setup-0.9.5-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.5)
 
 ## 两款软件分别安装
 
