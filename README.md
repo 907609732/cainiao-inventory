@@ -1,5 +1,7 @@
 # 菜鸟云仓库存同步
 
+[**Releases · 下载安装包**](https://github.com/907609732/cainiao-inventory/releases)
+
 Windows 桌面软件，当前发布版本 **0.9.4（预发布）**，用于菜鸟云仓库存采集、Excel 校验、补货预警、月度销量统计和钉钉通知。
 
 ## 下载
