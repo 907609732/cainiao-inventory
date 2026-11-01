@@ -10,27 +10,37 @@ jobs:
   coexistence:
     runs-on: windows-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [fresh, upgrade]
     steps:
       - uses: actions/checkout@v4
       - name: Download and verify candidate and authentic workbench
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          SCENARIO: ${{ matrix.scenario }}
         run: |
           New-Item -ItemType Directory C:\Input,C:\WorkbenchInput,C:\Kit,C:\Results -Force | Out-Null
           gh release download v0.9.6 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.9.6-x64.exe --dir C:\Input
           if($LASTEXITCODE -ne 0){throw 'Candidate download failed'}
-          gh release download v0.9.5 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.9.5-x64.exe --dir C:\Input
-          if($LASTEXITCODE -ne 0){throw 'Previous cloud download failed'}
+          if($env:SCENARIO -eq 'upgrade'){
+            gh release download v0.9.5 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.9.5-x64.exe --dir C:\Input
+            if($LASTEXITCODE -ne 0){throw 'Previous cloud download failed'}
+          }
           Invoke-WebRequest 'https://github.com/907609732/wucheng-ecommerce-erp-v2/releases/download/0.11.4/CloudWarehouseInventorySync-Setup-0.11.4-x64.exe' -OutFile C:\WorkbenchInput\CloudWarehouseInventorySync-Setup-0.11.4-x64.exe
-          @{
+          $spec=@{
             file='CainiaoWarehouse-Setup-0.9.6-x64.exe'
             sha256='39316345220f4563e1bd090aa1f94c5829b4106c0368148b84653bcb01c96940'
             workbenchFile='CloudWarehouseInventorySync-Setup-0.11.4-x64.exe'
             workbenchSha256='700d64b5878929384864a828d63f6cc555f603bf540aea0f314f3b621af256ff'
-            previousFile='CainiaoWarehouse-Setup-0.9.5-x64.exe'
-            previousSha256='1a9b447b1ae52938638a20fb12a7c3df0b2058ca13ce6c23511af95aa08f442f'
-          } | ConvertTo-Json | Set-Content C:\Kit\candidate.json
+          }
+          if($env:SCENARIO -eq 'upgrade'){
+            $spec.previousFile='CainiaoWarehouse-Setup-0.9.5-x64.exe'
+            $spec.previousSha256='1a9b447b1ae52938638a20fb12a7c3df0b2058ca13ce6c23511af95aa08f442f'
+          }
+          $spec | ConvertTo-Json | Set-Content C:\Kit\candidate.json
       - name: Install, reinstall, run together, uninstall and reopen workbench
         shell: pwsh
         run: |
@@ -41,6 +51,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: installer-coexistence-0.9.6
+          name: installer-coexistence-0.9.6-${{ matrix.scenario }}
           path: C:\Results\
           if-no-files-found: error
