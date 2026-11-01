@@ -1,6 +1,6 @@
 # 当前软件架构
 
-本文对应 Windows 云仓 0.9.3，本仓库只维护 Windows 版本。
+本文对应 Windows 云仓 0.9.4，本仓库只维护 Windows 版本。
 
 ## Windows 主链路
 

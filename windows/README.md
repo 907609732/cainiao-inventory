@@ -1,6 +1,6 @@
-# Windows 菜鸟云仓 0.9.3
+# Windows 菜鸟云仓 0.9.4
 
-当前版本为独立云仓安装版，GitHub 发布状态为 Pre-release。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.3)。
+当前版本为独立云仓安装版，GitHub 发布状态为 Pre-release。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)。
 
 ## 开发启动
 
@@ -24,9 +24,9 @@ npm run test:ui
 npm run warehouse:build -- --publish never
 ```
 
-安装器输出为 `dist/CloudWarehouseInventorySync-Setup-0.9.3-x64.exe`，同时生成 `latest.yml` 和差分更新索引。更新仓库为 `907609732/cainiao-inventory`。打包命令不自动发布，不应注入个人 GitHub 凭据。发布时核对版本、产物摘要、更新源及源码提交。
+安装器输出为 `dist/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe`，同时生成 `latest.yml` 和差分更新索引。更新仓库为 `907609732/cainiao-inventory`。打包命令不自动发布，不应注入个人 GitHub 凭据。发布时核对版本、产物摘要、更新源及源码提交。
 
-安装包构建时的 104 项相关测试及隔离启动检查已通过；后续源码清理的 136 项测试和四个页面的界面检查已通过。实际安装、真实平台采集 / 投递及正式数据迁移仍未验收。详见[验收说明](../docs/acceptance.md)。
+136 项自动化测试、源码及打包程序四个页面的界面检查、GitHub Windows CI 均已通过。Windows Sandbox 中全新静默安装、重复安装后启动和卸载通过。真实平台采集 / 投递、旧版本升级及正式数据迁移未在本轮验收。详见[验收说明](../docs/acceptance.md)。
 
 ## 数据与源码范围
 
@@ -48,4 +48,4 @@ node scripts/build-windows.mjs --from-receipt
 
 两个仓库默认并排存放，其他位置通过 `--erp=完整ERP路径` 指定。`workbench/scripts/workbench-build.mjs` 与 `legacy-suite-build.mjs` 仍由现有 ERP 构建入口引用，属于保留的集成适配器。
 
-扩展产物在 `release/windows/<tag>/`，包括云仓包、按需浏览器包、签名目录和摘要，发布仓库为 `907609732/cainiao-inventory`。扩展标签采用 `warehouse-<宿主版本>-<清单摘要>`；这与独立安装器的 `v0.9.3` 标签不同。主机范围和清单摘要必须按实际构建回执核对，构建成功不代表安装或正式数据迁移通过。
+扩展产物在 `release/windows/<tag>/`，包括云仓包、按需浏览器包、签名目录和摘要，发布仓库为 `907609732/cainiao-inventory`。扩展标签采用 `warehouse-<宿主版本>-<清单摘要>`；这与独立安装器的 `v0.9.4` 标签不同。主机范围和清单摘要必须按实际构建回执核对，构建成功不代表安装或正式数据迁移通过。

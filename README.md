@@ -1,13 +1,13 @@
 # 菜鸟云仓库存同步
 
-Windows 桌面软件，当前发布版本 **0.9.3（预发布）**，用于菜鸟云仓库存采集、Excel 校验、补货预警、月度销量统计和钉钉通知。
+Windows 桌面软件，当前发布版本 **0.9.4（预发布）**，用于菜鸟云仓库存采集、Excel 校验、补货预警、月度销量统计和钉钉通知。
 
 ## 下载
 
-- [下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.3/CloudWarehouseInventorySync-Setup-0.9.3-x64.exe)
-- [0.9.3 发布说明与校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.3)
+- [下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.4/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe)
+- [0.9.4 发布说明与校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
 
-安装器直接打开云仓界面。当前版本为预发布，尚未完成实际安装、真实菜鸟采集 / 钉钉投递和正式数据迁移验收；安装器未进行 Authenticode 代码签名。
+安装器直接打开云仓界面。当前版本为预发布，已完成隔离安装、重复安装、启动与卸载测试；真实菜鸟采集 / 钉钉投递和正式数据迁移尚未验收；安装器未进行 Authenticode 代码签名。
 
 ## 当前功能
 
@@ -38,7 +38,7 @@ npm run dev
 - [功能说明书与技术原理](windows/workbench/docs/feature-manual.md)
 - [当前架构](docs/architecture.md)
 - [验证结果与验收边界](docs/acceptance.md)
-- [0.9.3 版本说明](docs/release-v0.9.3.md)
+- [0.9.4 版本说明](docs/release-v0.9.4.md)
 
 ## 仓库结构
 
@@ -48,7 +48,7 @@ npm run dev
 | `scripts/build-windows.mjs` | 对接现有 ERP 工具链的签名扩展构建入口 |
 | `docs` | 当前版本、架构及验收说明 |
 
-本仓库仅维护 Windows 菜鸟云仓，版本号为 0.9.3。根目录的启动、测试和构建命令均转发到 Windows 源码。
+本仓库仅维护 Windows 菜鸟云仓，版本号为 0.9.4。根目录的启动、测试和构建命令均转发到 Windows 源码。
 
 ## License
 

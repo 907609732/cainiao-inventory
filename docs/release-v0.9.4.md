@@ -1,0 +1,24 @@
+# Windows 菜鸟云仓 0.9.4
+
+发布日期：2026-11-01。状态：预发布。
+
+[下载 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.4/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe) · [发布页与测试明细](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
+
+## 更新内容
+
+- 移除 macOS 插件环境及旧 ERP 客户端残留，只维护 Windows 云仓。
+- 统一源码启动、测试、构建和 Windows CI。
+- 修正测试夹具在 Windows 短路径别名环境中的真实路径比较。
+- 增加安装器 Sandbox 验收，并检查打包程序四个页面、版本和库存读取。
+
+## 发布前测试
+
+136 项自动化测试、源码及打包程序界面检查、GitHub Windows CI 通过。断网 Windows Sandbox 中全新安装、启动、重复安装后启动和卸载均通过。
+
+安装器大小：130,703,973 字节。SHA-256：
+
+```text
+f01774aed9a2c2a8611a0dbf86c35c7a8bafcb272d27fc114480e184f1764818
+```
+
+构建提交：`1593746a3686000187a475c5a951160319bf7589`。真实平台采集 / 投递、旧版本升级及正式数据迁移不在本轮验收范围，安装器未作 Authenticode 签名。见[完整验收说明](acceptance.md)。
