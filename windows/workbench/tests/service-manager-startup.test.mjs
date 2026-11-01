@@ -35,7 +35,7 @@ if(scenario.exitCode)setTimeout(()=>process.exit(scenario.exitCode),scenario.del
   for(const pid of ownedPids)if(alive(pid))try{process.kill(pid);}catch{}
   await sleep(100);
   assert.equal(fs.readFileSync(path.join(dataDir,'sales.sqlite'),'utf8'),'unchanged isolated ledger sentinel');
-  const temporaryRoot=path.resolve(os.tmpdir())+path.sep;
+  const temporaryRoot=fs.realpathSync.native(os.tmpdir())+path.sep;
   assert.ok(path.resolve(root).startsWith(temporaryRoot)&&path.basename(root).startsWith('lingtu-startup-test-'));
   fs.rmSync(root,{recursive:true,force:true,maxRetries:8,retryDelay:50});
  });
