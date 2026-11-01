@@ -72,40 +72,7 @@ function hydrateIntegration(integration) {
 }
 
 function hydrateAbout(about) {
-  const version = about?.version || "—";
-  const build = about?.build || {};
-  byId("aboutVersion").textContent = `v${version}`;
-  byId("aboutVersionState").textContent = `v${version}`;
-  byId("aboutChannel").textContent = build.channel || "—";
-  const commitText = build.commit && build.commit !== "development" ? `${String(build.commit).slice(0, 12)} · ` : "";
-  const builtText = build.builtAt ? new Date(build.builtAt).toLocaleString("zh-CN", { hour12: false }) : "—";
-  byId("aboutBuild").textContent = commitText + builtText;
-  const list = byId("changelogList");
-  list.replaceChildren();
-  const entries = about?.changelog || [];
-  if (!entries.length) { list.append(Object.assign(document.createElement("p"), { textContent: "暂无迭代记录。" })); return; }
-  for (const entry of entries) {
-    const item = document.createElement("div");
-    item.className = "changelog-entry";
-    const head = document.createElement("div");
-    head.className = "changelog-head";
-    const title = document.createElement("strong");
-    title.textContent = `v${entry.version} · ${entry.title}`;
-    const date = document.createElement("span");
-    date.textContent = entry.date || "";
-    head.append(title, date);
-    item.append(head);
-    if (entry.changes?.length) {
-      const ul = document.createElement("ul");
-      for (const change of entry.changes) {
-        const li = document.createElement("li");
-        li.textContent = change;
-        ul.append(li);
-      }
-      item.append(ul);
-    }
-    list.append(item);
-  }
+  byId("aboutVersion").textContent = 'v' + (about?.version || '—');
 }
 
 function deliveryMode() {
@@ -652,6 +619,12 @@ byId("openRepository").addEventListener("click", async () => {
   try { await api.openRepository(); }
   catch (error) { appendLog({ line: `无法打开 GitHub 仓库：${error.message}` }); }
 });
+for (const [id, open] of [['openWebsite', () => api.openWebsite()], ['openReleaseNotes', () => api.openReleaseNotes()]]) {
+  byId(id).addEventListener('click', async () => {
+    try { await open(); }
+    catch (error) { appendLog({ line: '无法打开外部链接：' + error.message }); }
+  });
+}
 byId("refreshInventory").addEventListener("click", loadInventory);
 byId("refreshMonthlySales").addEventListener("click", loadMonthlySales);
 byId("salesYear").addEventListener("change", () => { byId("salesMonth").value = ""; loadMonthlySales(); });

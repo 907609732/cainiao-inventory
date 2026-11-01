@@ -1,5 +1,6 @@
 export const EXTERNAL_LINKS = Object.freeze({
   repository: "https://github.com/907609732/cainiao-inventory",
+  releases: "https://github.com/907609732/cainiao-inventory/releases",
   website: "https://lttlt.top"
 });
 

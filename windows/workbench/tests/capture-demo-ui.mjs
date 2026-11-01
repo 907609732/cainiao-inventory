@@ -111,7 +111,7 @@ try{
     document.getElementById('mcpCommand').textContent=JSON.stringify({command:'CainiaoWarehouse.exe',args:['--mcp-stdio']});
     window.scrollTo(0,0);
   });
-  await capture('settings','#maintenanceCard');
+  await capture('settings','#settingsLinks');
   assert.deepEqual(errors,[]);
   const version=await app.evaluate(({app})=>app.getVersion());
   fs.writeFileSync(path.join(output,'demo-manifest.json'),JSON.stringify({softwareVersion:version,synthetic:true,realDataRead:false,

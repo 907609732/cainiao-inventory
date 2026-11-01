@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld("inventoryApp", {
   openLogs: () => ipcRenderer.invoke("logs:open"),
   openData: () => ipcRenderer.invoke("data:open"),
   openRepository: () => ipcRenderer.invoke("repository:open"),
+  openWebsite: () => ipcRenderer.invoke("website:open"),
+  openReleaseNotes: () => ipcRenderer.invoke("releases:open"),
   getIntegration: () => ipcRenderer.invoke("integration:get"),
   getUpdateState: () => ipcRenderer.invoke("update:get"),
   checkForUpdates: () => ipcRenderer.invoke("update:check"),

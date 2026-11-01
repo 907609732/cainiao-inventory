@@ -1057,9 +1057,9 @@ ipcMain.handle("remote:test", async () => {
 });
 ipcMain.handle("logs:open", () => shell.openPath(logDir()));
 ipcMain.handle("data:open", () => shell.openPath(appDataDir()));
-ipcMain.handle("repository:open", async (event) => {
+for (const [channel, name] of [["repository:open", "repository"], ["website:open", "website"], ["releases:open", "releases"]]) ipcMain.handle(channel, async (event) => {
   if (event.sender !== mainWindow?.webContents) throw new Error("无权打开外部链接");
-  const url = externalLink("repository");
+  const url = externalLink(name);
   await shell.openExternal(url);
   return { opened: true, url };
 });

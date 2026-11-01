@@ -295,10 +295,6 @@
       "sha256": "eda32f2f69741994a91439dd5051048ce058ea49618ecc8cfd99c159e3c88980"
     },
     {
-      "path": "desktop/renderer/feature-help.js",
-      "sha256": "4d1382515c6bcb03d902b81b948894a32ef63e57e3ceb56965da79c90c19021a"
-    },
-    {
       "path": "desktop/renderer/index.html",
       "sha256": "71ff0ba59532f1e1d1fe61aad7ba657c36c1f67d6fee7d1f952993d2a3511a27"
     },

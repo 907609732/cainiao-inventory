@@ -1,6 +1,6 @@
 # 菜鸟云仓功能说明书与技术原理
 
-本文由 desktop/renderer/feature-help-content.js 生成，与云仓设置中的使用说明 / 技术原理共用内容源。维护时修改该文件，再运行 npm run docs:features。平台步骤来自用户截图，实现说明来自当前源码；不代表真实平台自动下载已经验收。
+本文由 desktop/renderer/feature-help-content.js 生成，作为仓库中的独立功能文档；应用内不再展示使用说明。维护时修改该文件，再运行 npm run docs:features。平台步骤来自用户截图，实现说明来自当前源码；不代表真实平台自动下载已经验收。
 
 ## 云仓同步
 

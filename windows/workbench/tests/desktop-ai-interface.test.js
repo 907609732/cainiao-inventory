@@ -106,5 +106,7 @@ test("CLI login requires an explicit browser confirmation", () => {
 test("desktop repository link is fixed to the official GitHub repository", () => {
   assert.equal(EXTERNAL_LINKS.repository, "https://github.com/907609732/cainiao-inventory");
   assert.equal(externalLink("repository"), EXTERNAL_LINKS.repository);
+  assert.equal(externalLink("website"), "https://lttlt.top");
+  assert.equal(externalLink("releases"), "https://github.com/907609732/cainiao-inventory/releases");
   assert.throws(() => externalLink("unknown"), /不允许打开未知外部链接/);
 });
