@@ -11,7 +11,7 @@ if(!process.argv.includes('--from-receipt')){run(['scripts/engineering/erp.mjs',
 const receipt=JSON.parse(fs.readFileSync(path.join(erp,'.codex-artifacts/engineering/installer-current.json'),'utf8'));
 const {suiteSourceDigest}=await import(pathToFileURL(path.join(erp,'scripts/suite-source-digests.mjs')).href);
 if(receipt.source?.warehouseExtension!==suiteSourceDigest(path.join(root,'windows/workbench')))throw Error('Windows source changed since artifact build');
-if(receipt.extensionRepository!=='907609732/cainiao-inventory-codex'||!receipt.extensionAssets?.length)throw Error('Receipt does not contain Windows warehouse extension artifacts');
+if(receipt.extensionRepository!=='907609732/cainiao-inventory'||!receipt.extensionAssets?.length)throw Error('Receipt does not contain Windows warehouse extension artifacts');
 const output=path.join(root,'release/windows',receipt.extensionTag);fs.mkdirSync(output,{recursive:true});
 const files=[];
 for(const name of [...receipt.extensionAssets,'component-catalog.json']){

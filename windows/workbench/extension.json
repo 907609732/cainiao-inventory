@@ -5,7 +5,7 @@
   "arch": "x64",
   "surface": "window",
   "entry": "desktop/main.mjs",
-  "repository": "907609732/cainiao-inventory-codex",
+  "repository": "907609732/cainiao-inventory",
   "sourceRepository": "907609732/wucheng-ecommerce-erp-v2",
   "sourceCommit": "a9953146df59343969a08d62e4e7cf9bfa0da764",
   "dataPolicy": "preserve-existing",
