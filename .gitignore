@@ -13,3 +13,6 @@ coverage/
 windows/workbench/dist/
 windows/workbench/build/private/
 windows/workbench/data/
+__pycache__/
+*.py[cod]
+.pytest_cache/

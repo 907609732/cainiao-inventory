@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {_electron} from 'playwright';
+
+const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'cainiao-current-ui-'));
+const workspace = path.join(profile, 'workspace');
+const data = path.join(workspace, 'data');
+fs.mkdirSync(data, {recursive: true});
+const env = {...process.env, CAINIAO_APP_DATA_DIR: workspace, ERP_DATA_DIR: data,
+  LINGTU_REGISTRY_PATH: path.join(profile, 'registry.json'), LINGTU_ISOLATED_TEST: '1',
+  LINGTU_MANAGED_MODULE: '1', LINGTU_TEST_LEDGER: '1', LINGTU_BUSINESS_ONLY: '1'};
+delete env.ELECTRON_RUN_AS_NODE;
+const initialized = spawnSync(process.execPath, ['--input-type=module', '-e',
+  "import {getDb,closeDb} from './core/erp/db.js';getDb();closeDb();"],
+  {env, encoding: 'utf8', windowsHide: true});
+assert.equal(initialized.status, 0, initialized.stderr);
+fs.writeFileSync(path.join(profile, 'settings.json'), JSON.stringify({runtimeMode: 'server',
+  firstRunPending: false, scheduleEnabled: false, monthlySalesEnabled: false, startAtLogin: false}));
+let app;
+try {
+  app = await _electron.launch({executablePath: path.resolve('node_modules/electron/dist/electron.exe'),
+    args: ['.', '--user-data-dir=' + profile, '--managed-module=warehouse'], env});
+  const page = await app.firstWindow();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.waitForFunction(() => !!window.inventoryApp);
+  const state = await page.evaluate(() => window.inventoryApp.getState());
+  assert.equal(state.running, false);
+  assert.equal(Boolean(state.nextScheduledRun), false);
+  assert.equal(Boolean(state.nextMonthlyScheduledRun), false);
+  const views = ['dashboard', 'inventory', 'sales', 'settings'];
+  assert.deepEqual(await page.locator('.view-tab').evaluateAll(nodes => nodes.map(n => n.dataset.view)), views);
+  for (const view of views) {
+    await page.locator(`.view-tab[data-view="${view}"]`).click();
+    await page.locator(`[data-view-panel="${view}"]`).waitFor({state: 'visible'});
+  }
+  await page.evaluate(() => window.inventoryApp.getInventory());
+  assert.equal(await page.locator('[data-view="attendance"]').count(), 0);
+  assert.deepEqual(errors, []);
+  console.log(JSON.stringify({ok: true, views, inventoryRead: true, rendererErrors: errors, isolated: true}));
+} finally {
+  await app?.close();
+  fs.rmSync(profile, {recursive: true, force: true});
+}

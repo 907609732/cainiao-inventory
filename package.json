@@ -14,7 +14,8 @@
     "lint": "tsc --noEmit",
     "validate": "npm run lint && npm test && bash scripts/validate-release.sh",
     "pack:release": "bash scripts/build-release.sh",
-    "build:windows": "node scripts/build-windows.mjs"
+    "build:windows": "node scripts/build-windows.mjs",
+    "dev": "npm --prefix windows/workbench run dev"
   },
   "devDependencies": {
     "@types/node": "22.18.10",

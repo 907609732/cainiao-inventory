@@ -1,5 +1,7 @@
 # 菜鸟库存自动化 Codex 插件
 
+Windows 云仓最新版源码位于 [`windows/workbench`](windows/workbench)，当前版本 `0.9.3`。首次执行 `npm --prefix windows/workbench ci --workspaces=false`，之后在仓库根目录执行 `npm run dev` 启动云仓。Windows 打包与验收见 [Windows 说明](windows/README.md)。
+
 这是一个独立的 macOS Codex 插件，用于每天抓取菜鸟云仓库存、验证 Excel、生成补货预警，并安全发送到钉钉。数据验证失败、登录失效或页面导出失败时，任务会停止，不会发送旧库存。
 
 ## 安装

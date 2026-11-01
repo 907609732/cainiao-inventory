@@ -2,6 +2,8 @@
 
 ## 独立 Windows 安装器
 
+当前 Windows 源码版本为 `0.9.3`。在仓库根目录执行 `npm run dev` 即启动云仓界面。首次运行先执行 `npm --prefix windows/workbench ci --workspaces=false`。
+
 `workbench/` 也可直接构建云仓独立安装器，无需先启动 ERP 预览。
 
 ```powershell
@@ -9,6 +11,8 @@ cd windows/workbench
 npm ci --workspaces=false
 npm run warehouse:build -- --publish never
 ```
+
+在 `windows/workbench` 中运行 `npm test` 检查云仓测试，`npm run test:ui` 检查 Electron 界面。源码树不保留历史安装包、测试账本、发票模块缓存或独立 ERP 客户端；与现有 ERP 对接仍需使用的扩展构建适配器继续保留。
 
 产物在 `workbench/dist/`。安装器及更新清单发布到 `907609732/cainiao-inventory`，不上传本地账本、登录资料或构建凭据。未完成真实平台和正式数据迁移验收的版本使用 GitHub Pre-release。
 
