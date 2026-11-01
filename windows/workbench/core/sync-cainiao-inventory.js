@@ -1,3 +1,4 @@
+import {sendNotificationReport,notificationEnvironment} from './notifications.js';
 import { chromium } from 'playwright';
 import { browserLaunchOptions } from './browser-launch.js';
 import fs from 'fs';
@@ -572,7 +573,7 @@ async function synchronizeInventory(daily, runId) {
   // 1. 从菜鸟导出
   const file = await exportWithSingleAuthRecovery();
   if (!file || !fs.existsSync(file)) {
-    throw new Error('没有下载到新的库存文件，已停止后续本地导入和钉钉通知。');
+    throw new Error('没有下载到新的库存文件，已停止后续本地导入和消息通知。');
   }
   daily.updateRun(runId, {collectedAt:new Date().toISOString(),collectionStatus:'success',fileHash:createHash('sha256').update(fs.readFileSync(file)).digest('hex')});
 
@@ -588,7 +589,7 @@ async function synchronizeInventory(daily, runId) {
   const validationId=Number(getDb().prepare("SELECT MAX(id) AS id FROM inventory_data_validations WHERE warehouse_id='cainiao'").get().id);
   daily.updateRun(runId, {sourceDate:validation.sourceDate,validationId,rowCount:validation.rowCount,totalQuantity:validation.totalQuantity,validationStatus:validation.ok?'success':'failed',validatedAt:new Date().toISOString()});
   if (!validation.ok) {
-    throw new Error(`库存数据校验失败，已禁止同步和钉钉发送：${validation.errors.join('；')}`);
+    throw new Error(`库存数据校验失败，已禁止同步和通知发送：${validation.errors.join('；')}`);
   }
   console.log(`✅ 数据校验通过：来源日期 ${validation.sourceDate}，${validation.rowCount} 个 SKU，库存合计 ${validation.totalQuantity}`);
   if (validation.warnings.length) console.log(`   提醒：${validation.warnings.join('；')}`);
@@ -621,18 +622,20 @@ async function synchronizeInventory(daily, runId) {
   console.log(`   预警 SKU: ${report.lowStockItems?.length || 0}`);
 
   // 5. 发送钉钉
-  console.log('\n📤 发送钉钉消息...');
+  console.log('\n📤 发送通知消息...');
   daily.updateRun(runId,{deliveryStatus:'unknown'});
   const markdown = buildInventoryMarkdown('table');
-  const dingResult = await sendInventoryDingTalkMarkdown({
+  const sendReport = process.env.WAREHOUSE_NOTIFICATION_CONFIG ? async payload => sendNotificationReport({...payload,...notificationEnvironment()}) : sendInventoryDingTalkMarkdown;
+  const dingResult = await sendReport({
     title: markdown.title,
-    text: markdown.shouldNotify ? markdown.text : `### 云仓每日同步完成\n\n来源日期：${validation.sourceDate}\n\n已采集并校验入库 ${validation.rowCount} 个 SKU，库存合计 ${validation.totalQuantity}。当前无严重缺货预警，请负责人登录工作台核对并确认任务。`,
+    text: markdown.shouldNotify ? markdown.text : `### 云仓每日同步完成\n\n来源日期：${validation.sourceDate}\n\n已采集并校验入库 ${validation.rowCount} 个 SKU，库存合计 ${validation.totalQuantity}。当前无严重缺货预警，请负责人在菜鸟云仓中核对。`,
     shouldNotify: true,
   });
-  const accepted=inventoryDeliveryAccepted(dingResult);
+  const accepted=dingResult?.channels ? dingResult.accepted : inventoryDeliveryAccepted(dingResult);
   daily.updateRun(runId, {deliveryStatus:dingResult?.skipped?'skipped':accepted?'accepted':'unknown',...(accepted?{sentAt:new Date().toISOString()}:{}),deliveryReceipt:JSON.stringify(dingResult).slice(0,2000)});
-  if(!accepted&&!dingResult?.skipped)throw Error('钉钉未返回可核对的受理记录，请检查群和服务商发送记录');
-  console.log('✅ 钉钉发送结果:', dingResult);
+  if(!accepted&&!dingResult?.skipped)throw Error('通知渠道未全部确认受理，请检查各渠道的服务商发送记录');
+  if(dingResult?.channels) for(const [channel,result] of Object.entries(dingResult.channels)) console.log('通知 '+channel+'：'+result.status);
+  console.log('✅ 通知发送结果:', dingResult);
 
   console.log('\n🎉 全流程完成');
 }

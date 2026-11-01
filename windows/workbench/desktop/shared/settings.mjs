@@ -1,4 +1,6 @@
+import {NOTIFICATION_DEFAULTS,NOTIFICATION_SECRET_FIELDS,normalizeNotificationSettings,validateNotifications} from './notification-settings.mjs';
 export const DEFAULT_SETTINGS = Object.freeze({
+  ...NOTIFICATION_DEFAULTS,
   runtimeMode: "standalone",
   remoteServerUrl: "https://erp.4444520.xyz",
   remoteServerPort: 17320,
@@ -19,6 +21,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
 });
 
 export const SECRET_FIELDS = Object.freeze([
+  ...NOTIFICATION_SECRET_FIELDS,
   "cainiaoPassword",
   "dingtalkClientId",
   "dingtalkClientSecret",
@@ -28,6 +31,7 @@ export const SECRET_FIELDS = Object.freeze([
 ]);
 
 export const EDITABLE_SECRET_FIELDS = Object.freeze([
+  ...NOTIFICATION_SECRET_FIELDS,
   "cainiaoPassword",
   "dingtalkClientId",
   "dingtalkClientSecret",
@@ -36,7 +40,8 @@ export const EDITABLE_SECRET_FIELDS = Object.freeze([
 ]);
 
 export function normalizeSettings(input = {}) {
-  const settings = { ...DEFAULT_SETTINGS, ...input };
+  const settings = { ...DEFAULT_SETTINGS, ...input, ...normalizeNotificationSettings(input) };
+  for (const key of SECRET_FIELDS) delete settings[key];
   settings.runtimeMode = ["standalone", "server", "client"].includes(settings.runtimeMode)
     ? settings.runtimeMode
     : "standalone";
@@ -71,7 +76,7 @@ export function validateSettings(settings, secretFlags = {}) {
     ...validateRuntimeSettings(value).errors,
     ...validateAutomationSettings(value).errors,
     ...validateCainiaoSettings(value, secretFlags).errors,
-    ...validateDingTalkSettings(value, secretFlags).errors
+    ...validateNotifications(value, secretFlags).errors
   ];
   return { ok: errors.length === 0, errors, value };
 }

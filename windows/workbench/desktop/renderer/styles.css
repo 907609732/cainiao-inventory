@@ -170,3 +170,8 @@ legend { padding: 0 8px; font-weight: 700; color: var(--lt-ink); }
 .managed-cloud [data-standalone-update] { display: none !important; }
 
 .settings-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--lt-line); }
+
+.notification-channel { margin-top: 16px; padding: 16px; border: 1px solid var(--lt-line); border-radius: var(--lt-radius-panel); }
+.notification-channel summary { cursor: pointer; font-weight: 700; }
+.notification-channel .form-grid { margin-top: 16px; }
+.notification-channel .check { margin-top: 12px; }

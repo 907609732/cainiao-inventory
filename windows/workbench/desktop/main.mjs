@@ -1,3 +1,5 @@
+import {validateNotifications,normalizeNotificationSettings} from './shared/notification-settings.mjs';
+import {sendNotificationReport} from '../core/notifications.js';
 import { app, BrowserWindow, ipcMain, safeStorage, shell, dialog } from "electron";
 import {readComponentContext} from "./shared/component-context.mjs";
 import {installBundledDesks} from './shared/install-desks.mjs';
@@ -18,7 +20,6 @@ import {
   normalizeSettings,
   validateAutomationSettings,
   validateCainiaoSettings,
-  validateDingTalkSettings,
   validateRuntimeSettings,
   validateSettings
 } from "./shared/settings.mjs";
@@ -405,6 +406,8 @@ function buildEnvironment(settings, secrets, kind = "sync") {
     CAINIAO_PASSWORD: secrets.cainiaoPassword || "",
     BUSINESS_TIME_ZONE: "Asia/Shanghai",
     LOW_STOCK_THRESHOLD: String(settings.lowStockThreshold),
+    WAREHOUSE_NOTIFICATION_CONFIG: JSON.stringify({...settings,...normalizeNotificationSettings(settings)}),
+    WAREHOUSE_NOTIFICATION_SECRETS: JSON.stringify(Object.fromEntries(EDITABLE_SECRET_FIELDS.map(key=>[key,secrets[key]||'']))),
     DINGTALK_SKIP_SEND: inventoryTask ? "0" : "1",
     DINGTALK_INVENTORY_REPORT_ENABLED: inventoryTask ? "true" : "false",
     DINGTALK_REMINDER_ENABLED: "false",
@@ -452,6 +455,7 @@ async function startProcess(kind, trigger = "manual", options = {}, context = {}
     ? validateSettings(settings, flags)
     : validateCainiaoSettings(settings, flags);
   if (!validation.ok) throw new Error(validation.errors.join("；"));
+  if(kind === "sync") { const notifications=validateNotifications(settings,flags,{requireEnabled:true}); if(!notifications.ok)throw new Error(notifications.errors.join("；")); }
   const scriptPath = path.join(componentAppRoot, "core", definition.scriptName);
   if(kind==='sync'&&!fs.existsSync(inventoryDatabasePath())){
     process.env.ERP_DATA_DIR=path.dirname(inventoryDatabasePath());
@@ -675,16 +679,14 @@ async function collectDiagnostics() {
   const cloudLock = lockDiagnostic(path.join(root, "state", "cloud-sync.lock"));
   const coreScripts = Object.fromEntries(["sync-cainiao-inventory.js", "playwright-login.js"].map((name) => [name, fs.existsSync(path.join(componentAppRoot, "core", name))]));
   const accountConfigured = Boolean(settings.cainiaoUsername && flags.cainiaoPassword);
-  const robotConfigured = settings.deliveryMode === "app"
-    ? Boolean(settings.dingtalkRobotCode && settings.dingtalkConversationId && flags.dingtalkClientId && flags.dingtalkClientSecret)
-    : Boolean(flags.dingtalkWebhook);
+  const robotConfigured = validateNotifications(settings, flags, {requireEnabled:true}).ok;
   const workspaceAccess = pathAccess(root);
   const checks = [
     { id: "workspace", status: workspaceAccess.readable && workspaceAccess.writable ? "ok" : "error", message: workspaceAccess.writable ? "工作目录可读写" : "工作目录不可写" },
     { id: "config", status: config.validJson ? "ok" : "error", message: config.validJson ? "config.json 可解析" : "config.json 缺失或无法解析" },
     { id: "secrets", status: safeStorage.isEncryptionAvailable() ? "ok" : "error", message: safeStorage.isEncryptionAvailable() ? "Windows 安全存储可用" : "Windows 安全存储不可用" },
     { id: "account", status: accountConfigured ? "ok" : "warning", message: accountConfigured ? "菜鸟账号配置完整" : "菜鸟账号配置不完整" },
-    { id: "robot", status: robotConfigured ? "ok" : "warning", message: robotConfigured ? "钉钉机器人配置完整" : "钉钉机器人配置不完整" },
+    { id: "robot", status: robotConfigured ? "ok" : "warning", message: robotConfigured ? "通知渠道配置完整" : "通知渠道配置不完整" },
     { id: "auth", status: auth.exists && auth.validJson ? "ok" : "warning", message: auth.exists && auth.validJson ? "登录态文件结构有效，但不能仅凭文件判断会话仍在线" : "登录态文件缺失或损坏" },
     { id: "core", status: Object.values(coreScripts).every(Boolean) ? "ok" : "error", message: Object.values(coreScripts).every(Boolean) ? "核心脚本完整" : "核心脚本缺失" },
     { id: "desktop_lock", status: desktopLock.stale ? "warning" : "ok", message: desktopLock.stale ? "发现桌面任务陈旧锁" : (desktopLock.processAlive ? "桌面任务正在运行" : "无桌面任务锁") },
@@ -693,7 +695,7 @@ async function collectDiagnostics() {
   ];
   const recommendations = [];
   if (!accountConfigured) recommendations.push("先在设置中补齐菜鸟账号和密码。");
-  if (!robotConfigured) recommendations.push("先在设置中补齐钉钉机器人和目标群配置。");
+  if (!robotConfigured) recommendations.push("先在设置中补齐并启用至少一个通知渠道。");
   if (!auth.exists || !auth.validJson) recommendations.push("由用户执行登录刷新；验证码或滑块必须由用户本人处理。");
   if (desktopLock.stale || cloudLock.stale) recommendations.push("不要直接删除锁；先核对锁内 PID、匹配进程和日志，再归档陈旧锁。");
   if (database.latestValidation.available && database.latestValidation.status !== "valid") recommendations.push("保持库存发布门禁，修复数据问题后重新采集，禁止绕过校验发送。");
@@ -825,9 +827,7 @@ async function interfaceStatus() {
   const lock = readTaskLock();
   const lockActive = isProcessAlive(Number(lock?.pid));
   const accountConfigured = Boolean(settings.cainiaoUsername && flags.cainiaoPassword);
-  const robotConfigured = settings.deliveryMode === "app"
-    ? Boolean(settings.dingtalkRobotCode && settings.dingtalkConversationId && flags.dingtalkClientId && flags.dingtalkClientSecret)
-    : Boolean(flags.dingtalkWebhook);
+  const robotConfigured = validateNotifications(settings, flags, {requireEnabled:true}).ok;
   return {
     version: componentVersion,
     state: runningChild || lockActive ? "busy" : "idle",
@@ -974,6 +974,7 @@ ipcMain.handle("settings:save", async (_event, payload = {}) => {
   for (const key of SECRET_FIELDS) {
     const value = String(incomingSecrets[key] || "").trim();
     if (value) mergedSecrets[key] = value;
+    else if(key === "telegramProxyUrl" && Object.prototype.hasOwnProperty.call(incomingSecrets,key)) delete mergedSecrets[key];
   }
   const settings = normalizeSettings(payload.settings || {});
   const validation = validateSettings(settings, secretFlags(mergedSecrets));
@@ -990,7 +991,7 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
   const validators = {
     runtime: validateRuntimeSettings,
     account: validateCainiaoSettings,
-    robot: validateDingTalkSettings,
+    robot: validateNotifications,
     automation: validateAutomationSettings,
     updates: (settings) => ({ ok: true, errors: [], value: normalizeSettings(settings) })
   };
@@ -1005,6 +1006,7 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
     if (!Object.prototype.hasOwnProperty.call(incomingSecrets, key)) continue;
     const value = String(incomingSecrets[key] || "").trim();
     if (value) mergedSecrets[key] = value;
+    else if(key === "telegramProxyUrl" && Object.prototype.hasOwnProperty.call(incomingSecrets,key)) delete mergedSecrets[key];
   }
   const settings = normalizeSettings({ ...currentSettings, ...(payload.settings || {}) });
   if (section === "runtime") delete settings.firstRunPending;
@@ -1015,7 +1017,7 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
   await encryptSecrets(mergedSecrets);
   configureSchedule();
   if (section === "runtime") await configureRemoteService();
-  const sectionNames = { runtime: "运行模式", account: "菜鸟账号", robot: "钉钉机器人", automation: "自动任务", updates: "在线升级" };
+  const sectionNames = { runtime: "运行模式", account: "菜鸟账号", robot: "通知渠道", automation: "自动任务", updates: "在线升级" };
   appendLog(`${sectionNames[section]}设置已保存。`, "success");
   return publicSettings();
 });
@@ -1090,7 +1092,7 @@ function cliHelp() {
       "云仓库存同步.exe --cli login --confirm-open-browser",
       "云仓库存同步.exe --mcp-stdio"
     ],
-    note: "sync 会发送一条钉钉库存报告，必须提供 --confirm-send"
+    note: "sync 会向已启用渠道发送库存报告，必须提供 --confirm-send"
   };
 }
 
@@ -1099,7 +1101,7 @@ async function sendLatestValidInventoryReport() {
   if(fs.existsSync(path.join(app.getPath('userData'),'.workbench-maintenance.json')))throw Object.assign(Error('账本正在迁移维护，当前不能发送报告'),{code:'MODULE_MAINTENANCE'});
   const settings = readSettings();
   const secrets = await readSecrets();
-  const validation = validateDingTalkSettings(settings, secretFlags(secrets));
+  const validation = validateNotifications(settings, secretFlags(secrets), {requireEnabled:true});
   if (!validation.ok) throw new Error(validation.errors.join("；"));
 
   const releaseTaskLock = acquireTaskLock("send-latest-valid");
@@ -1129,10 +1131,7 @@ async function sendLatestValidInventoryReport() {
     }
 
     process.env.ERP_DATA_DIR = path.join(appDataDir(), "data");
-    const [{ getInventoryReport, buildInventoryMarkdown }, { sendDingTalkAppRobotMessage }] = await Promise.all([
-      import("../core/erp/reports.js"),
-      import("../core/dingtalk-app-robot.js")
-    ]);
+    const { getInventoryReport, buildInventoryMarkdown } = await import("../core/erp/reports.js");
     const report = getInventoryReport({ warehouseId: "cainiao" });
     if (report.snapshotDate !== validated.sourceDate
       || Number(report.skuCount) !== Number(validated.rowCount)
@@ -1142,20 +1141,9 @@ async function sendLatestValidInventoryReport() {
 
     const markdown = buildInventoryMarkdown("table", report);
     const notice = `> 今日新数据尚未发布，本次沿用最近已校验库存快照 **${validated.sourceDate}**。`;
-    const targetPrefix = settings.dingtalkTargetUserId && settings.dingtalkTargetName
-      ? `@${settings.dingtalkTargetName}\n\n`
-      : "";
-    const delivery = await sendDingTalkAppRobotMessage({
-      clientId: secrets.dingtalkClientId,
-      clientSecret: secrets.dingtalkClientSecret,
-      robotCode: settings.dingtalkRobotCode || secrets.dingtalkClientId,
-      conversationId: settings.dingtalkConversationId,
-      msgKey: "sampleMarkdown",
-      msgParam: {
-        title: `${markdown.title}（沿用上一版）`,
-        text: `${targetPrefix}${notice}\n\n${markdown.text}`
-      }
-    });
+    const delivery = await sendNotificationReport({title: markdown.title, text: notice + '\n\n' + markdown.text, settings, secrets});
+    for(const [channel,result] of Object.entries(delivery.channels)) appendLog(`通知 ${channel}：${result.status === 'accepted' ? '已受理' : result.status === 'unknown' ? '结果不明' : '失败'}`,result.status === 'accepted' ? 'success' : 'error');
+    if (!delivery.accepted) throw new Error('部分通知渠道未确认受理，请检查发送结果与服务商记录');
     appendLog(`已发送最近有效库存快照：来源日期 ${validated.sourceDate}，${validated.rowCount} 个 SKU，库存合计 ${validated.totalQuantity}。`, "success");
     return {
       sent: true,

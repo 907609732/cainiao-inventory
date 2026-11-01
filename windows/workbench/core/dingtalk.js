@@ -81,6 +81,10 @@ export async function sendDingTalkWebhookMarkdown({ webhook, webhookSecret, titl
   return sendDingTalkWebhook(buildDingTalkMarkdownPayload({ title, text }), webhook, webhookSecret);
 }
 
+export async function sendDingTalkWebhookText({webhook,webhookSecret,text,atUserIds=[]}) {
+  return sendDingTalkWebhook(buildDingTalkTextPayload({text,atUserIds}),webhook,webhookSecret);
+}
+
 export async function sendDingTalkMarkdownMessage({ title, text, atUserIds = [], atMobiles = [] }) {
   return sendDingTalkWebhook(buildDingTalkMarkdownPayload({ title, text, atUserIds, atMobiles }));
 }

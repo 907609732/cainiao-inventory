@@ -60,6 +60,7 @@ test("GitHub update token is treated as an encrypted secret", async () => {
   assert.equal(SECRET_FIELDS.includes("githubUpdateToken"), true);
   assert.equal(EDITABLE_SECRET_FIELDS.includes("githubUpdateToken"), false);
   assert.deepEqual(EDITABLE_SECRET_FIELDS, [
+    "feishuAppSecret", "wecomKey", "emailPassword", "telegramBotToken", "telegramProxyUrl",
     "cainiaoPassword",
     "dingtalkClientId",
     "dingtalkClientSecret",

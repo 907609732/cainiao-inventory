@@ -21,6 +21,7 @@ jobs:
       - run: node node_modules/electron/install.js
       - run: npm test
       - run: npm run test:ui
+      - run: npm run test:ui:notifications
       - name: Verify explicit hosted-mode compatibility
         run: |
           $env:WAREHOUSE_TEST_MANAGED = '1'

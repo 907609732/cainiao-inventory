@@ -20,7 +20,9 @@ let selectedSalesSku = "";
 let activeRuntimeMode = "standalone";
 const salesLegendSelection = { monthly: {}, annual: {} };
 const byId = (id) => document.getElementById(id);
+const notificationSettingKeys = ["dingtalkEnabled","feishuEnabled","feishuAppId","feishuReceiveIdType","feishuReceiveId","wecomEnabled","emailEnabled","emailHost","emailPort","emailUser","emailTo","telegramEnabled","telegramChatId"];
 const fields = {
+  ...Object.fromEntries(notificationSettingKeys.map(id=>[id,byId(id)])),
   cainiaoUsername: byId("cainiaoUsername"),
   scheduleTime: byId("scheduleTime"),
   monthlySalesTime: byId("monthlySalesTime"),
@@ -33,7 +35,9 @@ const fields = {
   dingtalkTargetUserId: byId("dingtalkTargetUserId"),
   dingtalkTargetName: byId("dingtalkTargetName")
 };
+const notificationSecretKeys = ["feishuAppSecret","wecomKey","emailPassword","telegramBotToken","telegramProxyUrl"];
 const editableSecretFields = [
+  ...notificationSecretKeys,
   "cainiaoPassword",
   "dingtalkClientId",
   "dingtalkClientSecret",
@@ -84,9 +88,15 @@ function hasAccount(settings) {
 }
 
 function hasRobot(settings) {
-  return settings.deliveryMode === "app"
-    ? Boolean(settings.dingtalkRobotCode && settings.dingtalkConversationId && settings.secretFlags.dingtalkClientId && settings.secretFlags.dingtalkClientSecret)
-    : Boolean(settings.secretFlags.dingtalkWebhook);
+  const flags = settings.secretFlags || {};
+  const ready = [
+    [settings.dingtalkEnabled !== false, settings.deliveryMode === 'app' ? Boolean(settings.dingtalkRobotCode && settings.dingtalkConversationId && flags.dingtalkClientId && flags.dingtalkClientSecret) : Boolean(flags.dingtalkWebhook)],
+    [settings.feishuEnabled, Boolean(settings.feishuAppId && settings.feishuReceiveId && flags.feishuAppSecret)],
+    [settings.wecomEnabled, Boolean(flags.wecomKey)],
+    [settings.emailEnabled, Boolean(settings.emailHost && settings.emailUser && settings.emailTo && flags.emailPassword)],
+    [settings.telegramEnabled, Boolean(settings.telegramChatId && flags.telegramBotToken)]
+  ];
+  return ready.some(([enabled])=>enabled) && ready.every(([enabled,complete])=>!enabled||complete);
 }
 
 function setConfigState(id, ready) {
@@ -533,8 +543,8 @@ function navigateView(view) {
   document.querySelector('.view-tabs').classList.remove('hidden');
   document.querySelector('h1').textContent = titles[view];
   document.querySelector('.subtitle').textContent = view === 'settings'
-    ? (managedWarehouse ? '管理菜鸟账号、同步计划与钉钉提醒；连接统一由工作台设置。' : '管理菜鸟账号、同步计划、钉钉提醒和本机软件维护。')
-    : '采集、校验并通过企业应用机器人发送到钉钉。';
+    ? (managedWarehouse ? '管理菜鸟账号、同步计划与钉钉提醒；连接统一由工作台设置。' : '管理菜鸟账号、同步计划、多渠道通知和本机软件维护。')
+    : '采集、校验并通过已启用的通知渠道发送库存报告。';
   if (view !== 'settings') hideAllSecrets();
   if (view === 'inventory') loadInventory();
   if (view === 'sales') {
@@ -580,12 +590,14 @@ byId("accountSettingsForm").addEventListener("submit", (event) => {
 byId("robotSettingsForm").addEventListener("submit", (event) => {
   event.preventDefault();
   saveSection("robot", {
+    ...Object.fromEntries(notificationSettingKeys.map(id=>[id, fields[id].type === 'checkbox' ? fields[id].checked : fields[id].value])),
     deliveryMode: deliveryMode(),
     dingtalkRobotCode: fields.dingtalkRobotCode.value,
     dingtalkConversationId: fields.dingtalkConversationId.value,
     dingtalkTargetUserId: fields.dingtalkTargetUserId.value,
     dingtalkTargetName: fields.dingtalkTargetName.value
   }, {
+    ...Object.fromEntries(notificationSecretKeys.map(id=>[id,byId(id).value])),
     dingtalkClientId: byId("dingtalkClientId").value,
     dingtalkClientSecret: byId("dingtalkClientSecret").value,
     dingtalkWebhook: byId("dingtalkWebhook").value,
@@ -656,14 +668,14 @@ byId("salesSku").addEventListener("change", () => {
 });
 byId("syncDueMonthlySales").addEventListener("click", async () => {
   const month = byId("syncDueMonthlySales").dataset.month || monthlySalesReport?.latestCompleteMonth;
-  if (!month || !window.confirm(`确认从菜鸟同步 ${month} 完整月销量吗？只写入本机，不发送钉钉。`)) return;
+  if (!month || !window.confirm(`确认从菜鸟同步 ${month} 完整月销量吗？只写入本机，不发送通知。`)) return;
   try { await api.syncMonthlySales({ month }); applyState(await api.getState()); }
   catch (error) { appendLog({ line: `月销量同步未启动：${error.message}` }); }
 });
 async function startBackfillMonthlySales() {
   const from = byId("salesBackfillFrom").value || monthlySalesReport?.defaultBackfill.from;
   const to = byId("salesBackfillTo").value || monthlySalesReport?.defaultBackfill.to;
-  if (!from || !to || !window.confirm(`确认逐月补抓 ${from} 至 ${to} 吗？已有有效月份会跳过，全程不发送钉钉。`)) return;
+  if (!from || !to || !window.confirm(`确认逐月补抓 ${from} 至 ${to} 吗？已有有效月份会跳过，全程不发送通知。`)) return;
   try { await api.backfillMonthlySales({ from, to }); applyState(await api.getState()); }
   catch (error) { appendLog({ line: `历史月销量补抓未启动：${error.message}` }); }
 }

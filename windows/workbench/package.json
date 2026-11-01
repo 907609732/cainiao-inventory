@@ -30,7 +30,8 @@
     "sync:sales:backfill": "node core/backfill-cainiao-monthly-sales.js --from 2025-08 --to 2026-07",
     "docs:features": "node scripts/export-feature-help.mjs",
     "test:feature-help": "node --test tests/feature-help-content.test.mjs",
-    "docs:screenshots": "node tests/capture-demo-ui.mjs"
+    "docs:screenshots": "node tests/capture-demo-ui.mjs",
+    "test:ui:notifications": "node tests/notification-ui.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",
@@ -43,7 +44,9 @@
     "electron-updater": "^6.8.9",
     "fastify": "^5.12.5",
     "gridjs": "^6.2.0",
+    "nodemailer": "9.0.3",
     "playwright": "^1.49.1",
+    "push-all-in-one": "4.6.0",
     "semver": "7.7.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "yauzl": "3.4.0",

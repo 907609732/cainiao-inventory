@@ -194,11 +194,12 @@
 
       <form id="robotSettingsForm" class="settings-card server-only-settings">
         <div class="settings-card-heading">
-          <div><h3>钉钉机器人</h3><p>单独配置库存报告的发送机器人和目标群。</p></div>
+          <div><h3>通知渠道</h3><p>同一份报告可发送到多个已启用渠道，各渠道分别记录发送结果。</p></div>
           <span id="robotConfigState" class="config-state">待配置</span>
         </div>
         <fieldset>
-          <legend>发送方式</legend>
+          <legend>钉钉</legend>
+          <label class="check"><input id="dingtalkEnabled" type="checkbox">启用钉钉通知</label>
           <div class="mode-tabs">
             <label><input type="radio" name="deliveryMode" value="app">企业应用机器人（推荐）</label>
             <label><input type="radio" name="deliveryMode" value="webhook">群 Webhook</label>
@@ -228,9 +229,22 @@
             </div>
           </div>
         </fieldset>
+        <details class="notification-channel" data-notification-channel="feishu"><summary>飞书应用机器人</summary><p class="field-help">应用需要消息发送权限，并能访问接收目标。</p><label class="check"><input id="feishuEnabled" type="checkbox">启用飞书应用机器人通知</label><div class="form-grid"><label>App ID<input id="feishuAppId" type="text"  autocomplete="off"></label>
+<div class="secret-field"><label for="feishuAppSecret">App Secret</label><div class="secret-input-row"><input id="feishuAppSecret" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="feishuAppSecret">显示</button></div></div>
+<label>接收目标类型<select id="feishuReceiveIdType"><option value="chat_id">chat_id</option><option value="open_id">open_id</option><option value="union_id">union_id</option><option value="user_id">user_id</option><option value="email">email</option></select></label>
+<label>接收目标 ID<input id="feishuReceiveId" type="text"  autocomplete="off"></label></div></details>
+        <details class="notification-channel" data-notification-channel="wecom"><summary>企业微信群机器人</summary><p class="field-help">使用企业微信群自定义机器人 Webhook 中的 Key。</p><label class="check"><input id="wecomEnabled" type="checkbox">启用企业微信群机器人通知</label><div class="form-grid"><div class="secret-field"><label for="wecomKey">机器人 Key / Webhook 地址</label><div class="secret-input-row"><input id="wecomKey" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="wecomKey">显示</button></div></div></div></details>
+        <details class="notification-channel" data-notification-channel="email"><summary>邮箱（SMTP）</summary><p class="field-help">使用邮箱 SMTP 授权码；465 使用 TLS，587 使用 STARTTLS。多个收件邮箱用逗号分隔。</p><label class="check"><input id="emailEnabled" type="checkbox">启用邮箱（SMTP）通知</label><div class="form-grid"><label>SMTP 服务器<input id="emailHost" type="text"  autocomplete="off"></label>
+<label>SMTP 端口<input id="emailPort" type="number" min="1" max="65535" autocomplete="off"></label>
+<label>发件邮箱<input id="emailUser" type="text"  autocomplete="off"></label>
+<div class="secret-field"><label for="emailPassword">授权码 / 密码</label><div class="secret-input-row"><input id="emailPassword" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="emailPassword">显示</button></div></div>
+<label>收件邮箱<input id="emailTo" type="text"  autocomplete="off"></label></div></details>
+        <details class="notification-channel" data-notification-channel="telegram"><summary>Telegram（TG）</summary><p class="field-help">填写 Bot Token 和数字 Chat ID；网络需要时可配置 HTTP 或 SOCKS 代理。</p><label class="check"><input id="telegramEnabled" type="checkbox">启用Telegram（TG）通知</label><div class="form-grid"><div class="secret-field"><label for="telegramBotToken">Bot Token</label><div class="secret-input-row"><input id="telegramBotToken" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="telegramBotToken">显示</button></div></div>
+<label>Chat ID（数字）<input id="telegramChatId" type="text"  autocomplete="off"></label>
+<div class="secret-field"><label for="telegramProxyUrl">代理地址（可选）</label><div class="secret-input-row"><input id="telegramProxyUrl" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="telegramProxyUrl">显示</button></div></div></div></details>
         <div class="settings-actions">
           <p id="robotSaveMessage" class="save-message"></p>
-          <button class="primary btn" type="submit">保存机器人设置</button>
+          <button class="primary btn" type="submit">保存通知渠道</button>
         </div>
       </form>
 

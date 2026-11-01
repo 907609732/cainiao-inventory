@@ -1,3 +1,5 @@
+import {sendMonthlyNotifications} from '../monthly-notifications.js';
+import {notificationEnvironment} from '../notifications.js';
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -330,6 +332,7 @@ export async function sendWarehouseMonthlySalesReport(month, {
 } = {}) {
   const report = buildWarehouseMonthlySalesMarkdown(month);
   if (dryRun) return { preview: true, report };
+  if(process.env.WAREHOUSE_NOTIFICATION_CONFIG) return sendMonthlyNotifications({db:getDb(),reportType:REPORT_TYPE,month,report,...notificationEnvironment()});
   if (!config.clientId || !config.clientSecret || !config.robotCode || !config.conversationId || !config.targetUserId) {
     throw new Error("云仓月报需要完整的钉钉企业应用机器人、会话和目标用户配置。");
   }
