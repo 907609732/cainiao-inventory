@@ -1,8 +1,10 @@
 # Windows 菜鸟云仓 0.9.4
 
+> **已撤回，禁止继续安装。** 本版错误地复用了电商工作台的安装身份和目录，可能覆盖工作台。原全新安装测试未覆盖与工作台共存的情况。请勿直接卸载已覆盖的版本；应先备份并恢复工作台。
+
 发布日期：2026-11-01。状态：正式 Release（Latest）。
 
-[下载 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.4/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe) · [发布页与测试明细](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
+安装包已撤回 · [发布页与测试明细](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
 
 ## 更新内容
 

@@ -1,26 +1,19 @@
-# Windows 0.9.4 验收状态
+# Windows 0.9.5 验收
 
-本轮测试完成后才发布安装器，产物与 Windows Sandbox 测试使用同一 SHA-256。
+本版针对安装身份和默认数据目录冲突增加回归。0.9.3 / 0.9.4 已撤回，原来的全新安装测试不能替代软件共存验收。
 
-| 范围 | 结果 |
+| 项目 | 结果 |
 | --- | --- |
-| 本地自动化测试 | 136 项通过，0 项失败 |
-| GitHub Windows CI | [main 分支通过](https://github.com/907609732/cainiao-inventory/actions/runs/41319997648)，含测试及界面检查 |
-| 源码与打包程序界面 | 版本 0.9.4；四个页面、库存读取通过，无渲染错误 |
-| 全新安装 | 断网 Windows Sandbox 中 NSIS 静默安装成功，安装后的云仓窗口正常响应 |
-| 重复安装 | 同一安装器再次安装成功，云仓窗口正常响应 |
-| 卸载 | 卸载成功，程序可执行文件已移除 |
-| 包内容 | 未包含账本、登录资料、更新凭据、旧发票目录或 macOS 插件 |
-| 更新配置 | 指向 907609732/cainiao-inventory，SHA-512 清单与安装器一致 |
+| 自动化测试 | 140 项通过，0 失败 |
+| 源码与打包界面 | 独立模式；四个页面、版本、库存读取、独立注册表检查通过 |
+| Windows CI | 通过 |
+| 实际工作台 + 云仓共存 | Sandbox 内工作台 0.11.4 正常启动后安装云仓；程序摘要、快捷方式、卸载登记、数据绑定不变 |
+| 重复安装 | 云仓再次安装、启动，工作台仍保持不变 |
+| 单独卸载云仓 | 云仓程序移除；工作台文件仍在、原快捷方式和卸载登记保留、工作台重新启动成功 |
+| 本机恢复 | 原工作台 0.11.4 和独立云仓 0.9.5 同时正常响应，工作台程序及绑定摘要未被新云仓安装改变 |
 
-构建提交：`1593746a3686000187a475c5a951160319bf7589`。CI 提交：`7a361773fda90ab88f908fea2787611218e55f58`，后者只修正了测试夹具的临时目录真实路径比较，未改变打包运行代码。
+Sandbox 使用的安装器与发布安装器的 SHA-256 一致，明细附于 Release 的 `release-validation.json`。构建提交为 `4054e81171f285a55dfe786d3d6c6fc02ac09ba7`，后续安装测试目录修正及文档更新不改变运行代码。
 
-## 验收边界
+真实菜鸟采集、钉钉投递和账本迁移不在本轮验收范围。安装器未签署 Authenticode。不能将云仓独立安装或卸载测试理解为对旧覆盖版本直接卸载的授权。
 
-本轮未执行真实菜鸟采集、钉钉投递、0.9.3 到 0.9.4 的升级或正式业务数据迁移。重复安装测试不等于跨版本升级验收。安装器未进行 Authenticode 代码签名。GitHub 发布状态已调整为正式 Release（Latest），上述未验收范围保持如实记录。
-
-版本和校验值见 [0.9.4 发布说明](release-v0.9.4.md)。测试明细随 Release 的 `release-validation.json` 提供。
-
-## 复核
-
-按照 [Windows 说明](../windows/README.md) 安装依赖并准备 Electron 后，在仓库根目录运行 `npm test` 和 `npm run test:ui`。`windows/workbench/tests/windows-installer-sandbox.ps1` 仅允许在 Windows Sandbox 内执行，需将候选清单、安装包和结果目录分别映射至 C:\Kit、C:\Input、C:\Results。
+复核：按 [Windows 说明](../windows/README.md) 安装依赖后运行 `npm test` 和 `npm run test:ui`。安装共存测试脚本为 `windows/workbench/tests/windows-installer-sandbox.ps1`，仅能在 Windows Sandbox 执行，需提供云仓及真实工作台安装器与对应 SHA-256。
