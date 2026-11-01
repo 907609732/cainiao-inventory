@@ -26,7 +26,7 @@
   Files: desktop/renderer/index.html, desktop/renderer/renderer.js, desktop/main.mjs, tests/warehouse-ui.mjs.
 - [x] Integrate inventory and monthly reports, receipt classification and retry guards; run focused and full regression tests.
   Files: core/sync-cainiao-inventory.js, core/erp/warehouse-monthly-sales.js, desktop/main.mjs.
-- [ ] Update synthetic documentation/screenshots and attribution; verify packaging dependency collection and perform final review.
+- [x] Update synthetic documentation/screenshots and attribution; verify packaging dependency collection and perform final review.
 
 ## Rulings
 - SMTP uses the public Nodemailer API directly so TLS/STARTTLS can be required; no custom SMTP implementation.
@@ -34,3 +34,10 @@
 - Independent review found unknown-receipt retry, proxy clearing, and webhook mention regressions; each was reproduced with a failing test and fixed.
 
 - SMTP authentication/envelope rejection is classified as pre-delivery failure and can retry after correcting credentials; DATA/network uncertainty stays unknown.
+
+## Final evidence
+- 155 unit/regression tests passed.
+- Source standalone and hosted UI passed; four-channel configuration encryption, reload and optional proxy clearing passed.
+- Windows unpacked build at e81e6aea040371760a8396df1b198c7c1d1c1642 passed. Packaged four-view UI and packaged notification configuration/SDK-load checks passed with isolated profiles.
+- Windows CI: https://github.com/907609732/cainiao-inventory/actions/runs/41334840575 passed.
+- No live platform sends, installer publication or installed-profile changes were performed.

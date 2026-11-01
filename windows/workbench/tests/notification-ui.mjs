@@ -17,11 +17,15 @@ fs.writeFileSync(
     startAtLogin: false,
   }),
 );
-const env = {
-  ...process.env,
+const env = {...process.env};
+for (const key of Object.keys(env)) if (/^(LINGTU_|ERP_|CAINIAO_|DINGTALK_)/.test(key)) delete env[key];
+Object.assign(env, {
   LINGTU_ISOLATED_TEST: "1",
   LINGTU_TEST_LEDGER: "1",
-};
+  LINGTU_MANAGED_MODULE: "0",
+  CAINIAO_APP_DATA_DIR: path.join(root, "workspace"),
+  ERP_DATA_DIR: path.join(root, "workspace", "data"),
+});
 delete env.ELECTRON_RUN_AS_NODE;
 let app;
 const packaged = process.env.WAREHOUSE_TEST_EXE
@@ -49,6 +53,7 @@ try {
     env,
   });
   let page = await app.firstWindow();
+  assert.equal(await app.evaluate(({app})=>app.getPath('userData')),root);
   await page.waitForFunction(() => !!window.inventoryApp);
   await page.locator('[data-view="settings"]').click();
   for (const id of ["feishu", "wecom", "email", "telegram"]) {
