@@ -1,3 +1,4 @@
+param([switch]$HostedRunner)
 $ErrorActionPreference = 'Stop'
 $report = @{ok=$false; checks=@(); scope='Windows Sandbox coexistence with actual workbench installer'; livePlatformTested=$false}
 function Stop-OwnedApp([string]$file) {
@@ -14,13 +15,28 @@ function Open-CheckedApp([string]$file,[string]$title,[int]$limit=90) {
   throw "Window did not become ready: $title"
 }
 try {
-  if($env:USERNAME -ne 'WDAGUtilityAccount'){throw 'Run only inside Windows Sandbox'}
+  if($HostedRunner){
+    if($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'HostedRunner requires an ephemeral GitHub-hosted Windows runner'}
+    $report.scope='GitHub-hosted Windows coexistence with actual workbench installer'
+  }elseif($env:USERNAME -ne 'WDAGUtilityAccount'){throw 'Run only inside Windows Sandbox'}
   $spec=Get-Content C:\Kit\candidate.json -Raw | ConvertFrom-Json
   $installer=Join-Path C:\Input $spec.file
   $workbenchInstaller=Join-Path C:\WorkbenchInput $spec.workbenchFile
   if((Get-FileHash -LiteralPath $installer).Hash.ToLowerInvariant() -ne $spec.sha256){throw 'Cloud installer hash mismatch'}
   if((Get-FileHash -LiteralPath $workbenchInstaller).Hash.ToLowerInvariant() -ne $spec.workbenchSha256){throw 'Workbench installer hash mismatch'}
   $report.installerSha256=$spec.sha256
+  # Stage hash-verified local copies so mapped-folder behavior cannot affect
+  # installation. Application-control policies remain unchanged.
+  $localInstallers=Join-Path $env:TEMP 'cainiao-coexistence-installers'
+  New-Item -ItemType Directory -Path $localInstallers -Force | Out-Null
+  foreach($source in @($installer,$workbenchInstaller)){
+    $destination=Join-Path $localInstallers (Split-Path $source -Leaf)
+    Copy-Item -LiteralPath $source -Destination $destination
+    if((Get-FileHash -LiteralPath $source).Hash -ne (Get-FileHash -LiteralPath $destination).Hash){throw 'Local installer copy hash mismatch'}
+  }
+  $installer=Join-Path $localInstallers $spec.file
+  $workbenchInstaller=Join-Path $localInstallers $spec.workbenchFile
+  $report.installerExecution='hash-verified local copies; application-control policy unchanged'
   'Installing original workbench' | Set-Content C:\Results\stage.txt
   $setup=Start-Process -FilePath $workbenchInstaller -ArgumentList '/S' -WindowStyle Hidden -Wait -PassThru
   if($setup.ExitCode -ne 0){throw 'Workbench installation failed'}
@@ -61,7 +77,11 @@ try {
     if($shell.CreateShortcut($hostShortcut).TargetPath -ne $hostTarget){throw 'Workbench shortcut changed'}
     $cloudRegistration=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object DisplayName -like '菜鸟云仓*' | Select-Object -First 1
     if(!$cloudRegistration -or $cloudRegistration.PSPath -eq $hostKey){throw 'Cloud uninstall registration is not independent'}
-    $report.checks+=@{attempt=$attempt;installed=$true;independentProfile=$true;hostProgramAndBindingsUnchanged=$true;separateUninstallEntry=$true}
+    $hostProcess=Open-CheckedApp $hostExe '五成电子商务工作台' 90
+    $cloudProcess.Refresh()
+    if($cloudProcess.HasExited -or !$cloudProcess.Responding){throw 'Cloud stopped responding while workbench was opened'}
+    Stop-Process -Id $hostProcess.Id
+    $report.checks+=@{attempt=$attempt;installed=$true;independentProfile=$true;hostProgramAndBindingsUnchanged=$true;separateUninstallEntry=$true;bothApplicationsStarted=$true}
     Stop-Process -Id $cloudProcess.Id
   }
   'Uninstalling cloud while retaining workbench' | Set-Content C:\Results\stage.txt
