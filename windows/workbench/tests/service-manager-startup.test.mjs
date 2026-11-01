@@ -16,7 +16,7 @@ async function until(predicate){const deadline=Date.now()+2000;while(!predicate(
 const alive=pid=>{try{process.kill(pid,0);return true;}catch{return false;}};
 async function freePort(){const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));return port;}
 async function fixture(t,scenario={}){
- const root=fs.mkdtempSync(path.join(os.tmpdir(),'lingtu-startup-test-')),dataDir=path.join(root,'data'),registryFile=path.join(root,'registry.json'),port=await freePort(),workers=[];
+ const root=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),'lingtu-startup-test-'))),dataDir=path.join(root,'data'),registryFile=path.join(root,'registry.json'),port=await freePort(),workers=[];
  fs.mkdirSync(dataDir);fs.mkdirSync(path.join(root,'node_modules','express'),{recursive:true});
  fs.writeFileSync(path.join(root,'package.json'),JSON.stringify({name:'wucheng-sales-desk',version:'0.0.1',type:'module'}));
  fs.writeFileSync(path.join(dataDir,'sales.sqlite'),'unchanged isolated ledger sentinel');
