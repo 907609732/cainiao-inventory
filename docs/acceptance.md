@@ -1,30 +1,38 @@
-# v1.0.0 发布验收
+# Windows 0.9.3 验收状态
 
-正式标签和 Release 只能在以下检查全部通过后创建。
+## 已有证据
 
-## 自动测试
+| 范围 | 结果 |
+| --- | --- |
+| 安装器构建 | Windows x64 NSIS 安装器生成成功，130,704,110 字节 |
+| 发布时相关测试 | 104 项通过，0 项失败 |
+| 打包程序检查 | 独立测试账本下打开云仓窗口，库存读取成功 |
+| 源码清理回归 | 136 项通过，0 项失败 |
+| 清理后的界面 | 四个当前页面可打开，库存读取成功，无渲染错误 |
+| 发布附件 | GitHub 附件大小及 SHA-256 与本地产物一致 |
+| 更新配置 | 指向 907609732/cainiao-inventory |
+| 敏感资料 | 未打包本地账本、登录资料或内置更新凭据；源码变更扫描未发现泄露 |
 
-- TypeScript 类型检查通过。
-- Excel 正常、默认来源日延迟、缺列、公式不平、重复 SKU、跨日断层、零销量和大量预警用例通过。
-- 报告策略、钉钉签名、429/5xx、结果不确定和重复发送用例通过。
-- 中国时区、午夜、补跑窗口、运行锁和 launchd plist 用例通过。
-- MCP tools/resources 可通过 MCP Inspector 列出和调用，stdout 不包含非协议输出。
-- 插件、Skill、marketplace、构建产物和干净 HOME 安装验证通过。
-- 新仓库不包含个人路径、服务器地址、真实库存、Webhook、Token、密码或现有 ERP 历史。
+发布产物绑定提交 `98a28c522c69c436272a8cc2948f1bc5a2b851fe`；源码清理提交为 `56a2dac`。后续文档和源码整理不会替换已发布安装器。
 
-## 真实验收
+## 尚未完成
 
-1. 在当前 Mac 的隔离应用目录完成首次设置。
-2. 使用当前菜鸟账号执行一次 `validate_only`，确认直接下载网站默认报表，并分别记录任务参考日和 Excel 来源日。
-3. 发送唯一一条带“插件验收测试”标识的真实库存报告。
-4. 确认钉钉群收到一条且仅一条。
-5. 对同一报告再次执行发送，确认返回 `already_sent`。
-6. 使用故意破坏的匿名 Excel，确认运行失败且钉钉零发送。
-7. 安装 launchd 并触发一次非发送检查，确认调度状态与 MCP 一致。
+- 实际执行安装器安装及卸载验收。
+- 使用真实账号完成菜鸟采集与钉钉投递验收。
+- 正式业务数据迁移及在原安装环境中的升级验收。
 
-## 发布产物
+因此 [v0.9.3](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.3) 保持 Pre-release。安装器未进行 Authenticode 代码签名。测试通过不代表上述现场验收完成。
 
-- `cainiao-inventory-codex-v1.0.0.zip`
-- `cainiao-inventory-automation-core-1.0.0.tgz`
-- `SHA256SUMS`
-- Git 标签和 GitHub Release `v1.0.0`
+## 复核命令
+
+在 `windows/workbench` 安装依赖并准备 Electron 后执行：
+
+```powershell
+npm test
+npm run test:ui
+npm run warehouse:build -- --publish never
+```
+
+首次安装依赖和准备 Electron 的命令见 [Windows 开发说明](../windows/README.md)。重新构建会产生新文件，应重新核对摘要，不能复用本次发布的校验值。
+
+macOS 插件的独立验收清单见 [macOS 验收](macos-acceptance.md)。

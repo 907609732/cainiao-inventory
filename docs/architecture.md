@@ -1,57 +1,25 @@
-# 架构与执行流程
+# 当前软件架构
 
-## 组件
+本文对应 Windows 云仓 0.9.3。macOS Codex 插件见 [macOS 架构](macos-architecture.md)。
 
-- `cainiao-inventory-automation-core`：配置、日期、Excel 验真、报告、Keychain、钉钉、运行账本和 launchd。
-- 浏览器工作进程：使用独立 Playwright Profile 完成登录和默认报表下载。
-- `cainiaoInventory` MCP：把体检、设置、运行、状态和调度暴露给 Codex。
-- `cainiao-inventory-automation` Skill：规定 Codex 的调用顺序和安全边界。
-- localhost 设置向导：处理敏感配置、真实 dry-run 和调度启用。
+## Windows 主链路
 
-## 首次设置
+`desktop/main.mjs` 启动 Electron 窗口，`desktop/preload.cjs` 提供受控 IPC，`desktop/renderer` 提供运行概览、商品库存、销售趋势和云仓设置。
 
-```mermaid
-flowchart TD
-  A[安装插件] --> B[MCP 环境体检]
-  B --> C[localhost 设置向导]
-  C --> D[准备隔离运行时]
-  D --> E[专用浏览器登录]
-  E --> F[Keychain 保存钉钉凭证]
-  F --> G[无业务数据连接测试]
-  G --> H[真实抓取 dry-run]
-  H --> I{全部通过}
-  I -- 否 --> J[修复并保留本地诊断]
-  I -- 是 --> K[安装 launchd]
-```
+采集任务由主进程启动独立子进程，通过 `core` 中的 Playwright 逻辑访问菜鸟并下载报表，再执行校验、SQLite 入库和钉钉投递。读取页面数据与触发平台采集分开；投递结果未知时不能视为发送成功。
 
-## 每日执行
+- 库存与校验：`windows/workbench/core/erp`。
+- 任务、配置和数据位置：`windows/workbench/desktop/shared`。
+- 云仓受控业务接口：`windows/workbench/desktop/modules/cloud-control.mjs`、`desktop/workbench/warehouse-agent*.mjs`。
+- 安装器：`windows/workbench/build/electron-builder.config.cjs`。
+- 工作台签名扩展：仓库根目录 `scripts/build-windows.mjs`，依赖外部 ERP 工具链。
 
-```mermaid
-flowchart TD
-  A[15 分钟 due check] --> B{已到中国时间目标且未成功}
-  B -- 否 --> Z[退出]
-  B -- 是 --> C[获取运行锁]
-  C --> D[直接下载网站默认最新 Excel]
-  D --> E[SHA-256 与来源日验真]
-  E --> F{所有校验通过}
-  F -- 否 --> X[失败且不发送]
-  F -- 是 --> G[原子保存快照与报告]
-  G --> H[报告策略与幂等检查]
-  H --> I[钉钉发送]
-  I --> J[可选 HMAC 回调]
-  J --> K[写入最终运行清单]
-```
+## 数据边界
 
-## 幂等与失败模型
+源码树不保存正式库存、登录资料、密钥或构建凭据。普通启动会按已有位置绑定解析账本；隔离测试显式创建临时配置及账本。不能靠重建身份或空账本绕过原数据位置检查。
 
-钉钉幂等键由来源日、报告 SHA-256 和目标 Webhook 指纹组成。已成功发送的键不会再次发送，除非用户明确要求强制重发。
+旧发票模块缓存、独立 ERP 客户端和旧客户端迁移目录已从当前源码清理。与现有工作台对接的签名、请求验证及服务适配仍保留，不能仅因名称含工作台而删除。
 
-明确的 HTTP 或钉钉错误记录为 `failed`。请求超时或连接中断可能发生在钉钉已接收消息之后，因此记录为 `delivery_unknown`，不会自动重发。
+## 平台区分
 
-## 调度
-
-LaunchAgent `com.907609732.cainiao-inventory` 每 900 秒运行一次轻量检查。检查以 `Asia/Shanghai` 为准，不受 Mac 本地夏令时变化影响。22:00 错过后在 24 小时内补跑，超过窗口只记录未执行，不连续追发多日历史日报。
-
-## 文件与权限
-
-应用目录和业务文件使用仅当前用户可访问的权限。原始 Excel 默认保留 30 天，日志 30 天，失败页面截图和 HTML 7 天，规范化快照与运行清单长期保留。
+`packages/core`、`packages/mcp` 和 `plugins` 是 macOS Codex 插件源码，使用 Keychain 和 launchd。Windows 桌面程序使用 Electron 和 Windows 安全存储；两端版本号、入口及验收结果分别记录。

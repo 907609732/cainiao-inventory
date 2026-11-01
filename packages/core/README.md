@@ -12,4 +12,4 @@ const result = await automation.runInventory({ mode: "validate_only" });
 
 Secrets are stored in macOS Keychain. A validation failure never falls back to an older export and never enters the delivery stage.
 
-See the [plugin repository](https://github.com/907609732/cainiao-inventory-codex) for setup, security boundaries, and release artifacts.
+See the [plugin repository](https://github.com/907609732/cainiao-inventory/blob/main/docs/macos-plugin.md) for setup, security boundaries, and release artifacts.
