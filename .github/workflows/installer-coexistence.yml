@@ -3,11 +3,14 @@ name: Windows installer coexistence
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   coexistence:
+    # GitHub only exposes draft releases to callers with repository write access.
+    # This test downloads the candidate but never edits or publishes a release.
+    permissions:
+      contents: write
     runs-on: windows-latest
     timeout-minutes: 25
     strategy:
