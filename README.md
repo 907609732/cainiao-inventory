@@ -2,14 +2,14 @@
 
 [**Releases · 下载安装包**](https://github.com/907609732/cainiao-inventory/releases)
 
-Windows 桌面软件，当前发布版本 **0.9.4（预发布）**，用于菜鸟云仓库存采集、Excel 校验、补货预警、月度销量统计和钉钉通知。
+Windows 桌面软件，当前发布版本 **0.9.4（正式 Release）**，用于菜鸟云仓库存采集、Excel 校验、补货预警、月度销量统计和钉钉通知。
 
 ## 下载
 
 - [下载 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.4/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe)
 - [0.9.4 发布说明与校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
 
-安装器直接打开云仓界面。当前版本为预发布，已完成隔离安装、重复安装、启动与卸载测试；真实菜鸟采集 / 钉钉投递和正式数据迁移尚未验收；安装器未进行 Authenticode 代码签名。
+安装器直接打开云仓界面。当前版本已发布为正式 Release，已完成隔离安装、重复安装、启动与卸载测试；真实菜鸟采集 / 钉钉投递和正式数据迁移尚未验收；安装器未进行 Authenticode 代码签名。
 
 ## 当前功能
 

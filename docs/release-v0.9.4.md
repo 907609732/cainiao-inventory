@@ -1,6 +1,6 @@
 # Windows 菜鸟云仓 0.9.4
 
-发布日期：2026-11-01。状态：预发布。
+发布日期：2026-11-01。状态：正式 Release（Latest）。
 
 [下载 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.4/CloudWarehouseInventorySync-Setup-0.9.4-x64.exe) · [发布页与测试明细](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)
 

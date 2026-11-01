@@ -1,6 +1,6 @@
 # Windows 菜鸟云仓 0.9.4
 
-当前版本为独立云仓安装版，GitHub 发布状态为 Pre-release。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)。
+当前版本为独立云仓安装版，GitHub 发布状态为正式 Release（Latest）。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.4)。
 
 ## 开发启动
 
