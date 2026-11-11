@@ -43,10 +43,10 @@ Interface: profile `workspace/state/local-web.json` discovery stores PID, origin
 
 ### Task 4: Packaging and end-to-end acceptance
 Files: NSIS include, builder config, package scripts, `tests/local-web-ui.mjs`, docs and CI.
-- [ ] Test packaged dual startup, native browser fixture, HTTP auth, synthetic inventory/sales/settings consistency, two-mode owner PID, no real sends.
+- [x] Test packaged dual startup, native browser fixture, HTTP auth, synthetic inventory/sales/settings consistency, two-mode owner PID, no real sends.
 - [x] Add NSIS start-menu web shortcut carrying `--web`, preserve current app identity/shortcuts.
-- [ ] Run full regression, source/packaged UI, MCP, Windows unpacked build; document exact evidence and remaining installer boundary.
-- [ ] Whole-branch fresh review, resolve important findings, commit verified source; do not release/install unless requested.
+- [x] Run full regression, source/packaged UI, MCP, Windows unpacked build; document exact evidence and remaining installer boundary.
+- [x] Whole-branch fresh review, resolve important findings, commit verified source; do not release/install unless requested.
 
 ## Progress
 
@@ -55,3 +55,5 @@ Files: NSIS include, builder config, package scripts, `tests/local-web-ui.mjs`, 
 Ruling: dependency audit identified path guard advisories in static8.3.0; official10.1.10 metadata still supports Fastify5.x, so use patched10.1.10 and Fastify5.12.7 after targeted integration tests. Do not broadly update unrelated dependencies.
 
 2026-11-11 source verification: 189/189 regression, actual Electron HTTP renderer with synthetic inventory/sales/settings and shared CLI owner, readonly/revocable AI, failing and successful synthetic child log redaction, background-first/web/desktop owner reuse and graceful exit. Date exception AI preview + desktop confirmation local mock passed; managed UI remains compatible. Reviewer original P1/P2/P3 findings corrected with failing-then-passing regressions. Installer and packaged runtime checks are still pending.
+
+2026-11-11 final proof: source and packaged web/lifecycle/notification/date-exception checks passed; local candidate131625411 bytes SHA2562751b84970caa9ebcde4dd75e9bc3396c3cb43e3be78b11d152922166304aab2 at build4184945. Windows CI42968725312 and actual cloud fresh/0.9.7-upgrade/reinstall/uninstall42968725348 passed. Both reports ok=true, synthetic data/settings hashes preserved, both launch entries share owner. Final code review approved. Legacy workbench runtime coexistence NOT retested: original public asset removed; local retained authentic installer matched700d64... but current Sandbox is another software task. No stopping that VM or reuploading old software. This limitation remains open before a new public release; do not claim full legacy coexistence acceptance. Feature branch retained, no release/local production install.
