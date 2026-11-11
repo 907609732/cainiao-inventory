@@ -101,6 +101,7 @@ try {
   assert.equal(saved.emailPort, 587);
   assert.equal(saved.secretFlags.telegramBotToken, true);
   await page.locator("#telegramProxyUrl").fill("");
+  await page.locator('[data-clear-secret="telegramProxyUrl"]').check();
   await page.locator('#robotSettingsForm button[type="submit"]').click();
   await page.waitForFunction(
     () =>

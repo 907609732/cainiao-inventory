@@ -35,3 +35,9 @@ test('health redirects cannot forward discovery credentials to another service',
 test('verified owner calls carry authentication and write idempotency then poll receipts',async t=>{
  const c=await import(moduleUrl);const p=await fixture(t);const seen=[];const origin=await serve(t,(req,res)=>{seen.push(req);res.setHeader('Content-Type','application/json');if(req.url==='/api/v1/health'){assert.equal(req.headers.authorization,undefined);res.end(JSON.stringify({brand:'cainiao-cloud-warehouse',protocol:1,instanceId:record.instanceId}));}else {assert.equal(req.headers.authorization,`Bearer ${record.ownerToken}`);res.end(JSON.stringify({ok:true,value:req.url.includes('/tasks/')?{status:'completed',value:42}:{taskId:'task-1'}}));}});await c.writeDiscovery(p,{...record,origin});const owner=await c.connectLocalOwner({profile:p});assert.deepEqual(await owner.call('sync',{confirm:true},{write:true}),{taskId:'task-1'});assert.match(seen[1].headers['idempotency-key'],/^[a-f0-9-]{36}$/);assert.equal(await owner.pollTask('task-1'),42);
 });
+test('unknown receipt stops promptly and retains its task ID',async t=>{
+ const c=await import(moduleUrl),p=await fixture(t);let posts=0;
+ const origin=await serve(t,(req,res)=>{res.setHeader('Content-Type','application/json');if(req.method==='POST')posts++;res.end(JSON.stringify(req.url==='/api/v1/health'?{brand:'cainiao-cloud-warehouse',protocol:1,instanceId:record.instanceId}:{ok:true,value:{status:'unknown'}}));});
+ await c.writeDiscovery(p,{...record,origin});const owner=await c.connectLocalOwner({profile:p});
+ await assert.rejects(owner.pollTask('unknown-task',{timeoutMs:50}),/unknown-task/);assert.equal(posts,0);
+});

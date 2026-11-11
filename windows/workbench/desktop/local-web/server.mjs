@@ -36,7 +36,10 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
  app.get('/api/v1/health',async()=>({brand:'cainiao-cloud-warehouse',version,protocol:1,instanceId}));
  app.post('/api/v1/session',async(req,reply)=>{
   const token=req.body?.token,expires=tokens.get(token);tokens.delete(token);if(!expires||expires<Date.now())throw fail(401,'UNAUTHORIZED');
-  const id=random(),csrf=random();sessions.set(id,{id,csrf,expires:Date.now()+12*3600_000});reply.setCookie('warehouse_session',id,{path:'/',httpOnly:true,sameSite:'strict',maxAge:43200});return {csrf};
+  const previous=sessions.get(req.cookies.warehouse_session);
+  const session=previous&&previous.expires>=Date.now()?previous:{id:random(),csrf:random()};
+  session.expires=Date.now()+12*3600_000;sessions.set(session.id,session);
+  reply.setCookie('warehouse_session',session.id,{path:'/',httpOnly:true,sameSite:'strict',maxAge:43200});return {csrf:session.csrf};
  });
  app.get('/api/v1/session',async req=>{const ctx=await authenticate(req);if(ctx.kind!=='browser')throw fail(403,'FORBIDDEN');return {csrf:ctx.csrf};});
  app.get('/api/v1/events',async req=>{await authenticate(req);const after=Number(req.query.after||0);if(!Number.isSafeInteger(after)||after<0)throw fail(400,'INVALID_CURSOR');return {cursor,events:events.filter(e=>e.cursor>after)};});

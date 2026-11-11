@@ -53,6 +53,7 @@ module.exports = {
     ]
   },
   nsis: {
+    include: "build/local-web.nsh",
     oneClick: false,
     allowToChangeInstallationDirectory: false,
     createDesktopShortcut: true,

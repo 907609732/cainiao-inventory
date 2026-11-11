@@ -1,7 +1,9 @@
+import {createLocalWebServer} from './local-web/server.mjs';
+import {connectLocalOwner,writeDiscovery,removeDiscovery} from './local-web/client.mjs';
 import {createDateExceptionService} from '../core/date-exception-send.mjs';
 import {validateNotifications,normalizeNotificationSettings} from './shared/notification-settings.mjs';
 import {sendNotificationReport} from '../core/notifications.js';
-import { app, BrowserWindow, ipcMain, safeStorage, shell, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, safeStorage, shell, dialog, Tray, Menu, nativeImage } from "electron";
 import {readComponentContext} from "./shared/component-context.mjs";
 import {installBundledDesks} from './shared/install-desks.mjs';
 import {ServiceManager} from './shared/service-manager.mjs';
@@ -113,6 +115,41 @@ let updater = null;
 let runningTaskPromise = null;
 let stopRequestedPid = null;
 let mcpBridgeChild = null;
+let localWeb = null;
+let localTray = null;
+let startupReady = false;
+let pendingWebOpen = false;
+let pendingDesktopOpen = false;
+let shutdownComplete = false;
+let shutdownPromise = null;
+const webMode = process.argv.includes('--web');
+const backgroundMode = process.argv.includes('--background');
+const operationHandlers = new Map();
+let configurationQueue = Promise.resolve();
+function serializedConfiguration(callback) {
+  const result = configurationQueue.then(callback, callback);
+  configurationQueue = result.catch(() => {});
+  return result;
+}
+function registerOperation(channel, handler) {
+  const wrapped = ['settings:save','settings:save-section','local-access:create','local-access:revoke'].includes(channel)
+    ? (...args) => serializedConfiguration(() => handler(...args)) : handler;
+  // JSON has no Infinity: both transports use null for unbounded availability.
+  const transportHandler=['inventory:get','monthly-sales:get'].includes(channel)
+    ? async(...args)=>JSON.parse(JSON.stringify(await wrapped(...args))) : wrapped;
+  operationHandlers.set(channel, transportHandler);
+  ipcMain.handle(channel, transportHandler);
+}
+function trustedUiEvent(event) {
+  return Boolean(event?.sender && event.sender === mainWindow?.webContents)
+    || ['browser','owner'].includes(event?.localContext?.kind);
+}
+function publish(type, data) {
+  if(type==='inventory:log')void diagnosticSensitiveValues().then(values=>localWeb?.publish(type,{...data,line:sanitizeDiagnosticText(data.line,values)})).catch(()=>{});
+  else localWeb?.publish(type, data);
+  mainWindow?.webContents.send(type, data);
+}
+
 let cachedSettings = null;
 let cachedSecrets = null;
 let remoteService = null;
@@ -338,7 +375,7 @@ function appendLog(message, level = "info") {
   if (recentLog.length > 300) recentLog = recentLog.slice(-300);
   fs.mkdirSync(logDir(), { recursive: true });
   fs.appendFileSync(currentLogPath(), `${line}\n`, "utf8");
-  mainWindow?.webContents.send("inventory:log", { line, level });
+  publish("inventory:log", { line, level });
 }
 
 function exceptionalInventoryService() {
@@ -355,7 +392,7 @@ function dateExceptionAvailable() {
   try{return exceptionalInventoryService().available();}catch{return false;}
 }
 function assertExceptionalSendAllowed(event) {
-  if(event.sender!==mainWindow?.webContents)throw Error('无权特殊发送');
+  if(!trustedUiEvent(event)&&!(event?.localContext?.kind==='ai'&&event.localContext.write===true))throw Error('无权特殊发送');
   if(workbenchManaged||agentManaged)throw Error('托管模式请从中央任务结果页复核');
   if(runningChild||runningTaskPromise||dateExceptionSending)throw Error('已有任务正在运行');
   if(fs.existsSync(path.join(app.getPath('userData'),'.workbench-maintenance.json')))throw Error('账本正在维护，不能特殊发送');
@@ -383,7 +420,7 @@ function emitState(extra = {}) {
     logPath: currentLogPath(),
     ...extra
   };
-  mainWindow?.webContents.send("inventory:state", payload);
+  publish("inventory:state", payload);
   return payload;
 }
 
@@ -411,10 +448,10 @@ function createWindow() {
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
   mainWindow.on("close", (event) => {
     const settings = readSettings();
-    if (!quitting && (settings.runtimeMode === "server" || settings.scheduleEnabled || settings.monthlySalesEnabled)) {
+    if (!quitting && (localWeb || settings.runtimeMode === "server" || settings.scheduleEnabled || settings.monthlySalesEnabled)) {
       event.preventDefault();
       mainWindow.hide();
-      appendLog("窗口已隐藏，定时任务继续运行。再次启动软件可恢复窗口。");
+      appendLog("窗口已隐藏，云仓后台继续运行，可从托盘打开应用或网页版。");
     }
   });
   mainWindow.on("closed", () => { mainWindow = null; });
@@ -539,8 +576,8 @@ async function startProcess(kind, trigger = "manual", options = {}, context = {}
     if (cancelled) stopRequestedPid = null;
     if (runningTaskPromise === completion) runningTaskPromise = null;
     emitState({ lastResult: cancelled ? "cancelled" : (success ? "success" : "failed"), lastFinishedAt: new Date().toISOString() });
-    if (success && kind === "sync") mainWindow?.webContents.send("inventory:updated");
-    if (success && ["monthly-sales", "monthly-backfill"].includes(kind)) mainWindow?.webContents.send("monthly-sales:updated");
+    if (success && kind === "sync") publish("inventory:updated");
+    if (success && ["monthly-sales", "monthly-backfill"].includes(kind)) publish("monthly-sales:updated");
     resolveTask({
       success,
       cancelled,
@@ -577,11 +614,12 @@ async function stopCurrentTask() {
   }
 }
 
-async function runProcessAndWait(kind, trigger) {
-  await startProcess(kind, trigger);
+async function runProcessAndWait(kind, trigger, options = {}) {
+  await startProcess(kind, trigger, options);
   const completion = runningTaskPromise;
   if (!completion) throw new Error("任务未能进入运行状态");
-  return completion;
+  const result=await completion;
+  return {...result,logs:redactDiagnosticValue(result.logs,await diagnosticSensitiveValues())};
 }
 
 function readRecentLogLines(limit = 30) {
@@ -984,16 +1022,123 @@ function openRemoteLogin() {
   throw new Error(workbenchManaged ? '连接与登录由工作台 Tailscale 设置统一管理' : '请在云仓设置中使用“登录 / 刷新菜鸟状态”完成本机登录');
 }
 
-ipcMain.handle("settings:get", async () => publicSettings());
-ipcMain.handle("branding:get", () => currentBranding());
-ipcMain.handle("app:about", () => ({ version: componentVersion, build: readBuildInfo(), changelog: workbenchManaged ? CHANGELOG : STANDALONE_CHANGELOG }));
-ipcMain.handle("secrets:get-editable", async (event) => {
+
+function clearIncomingSecrets(secrets, keys) {
+  if(keys===undefined)return;
+  if(!Array.isArray(keys)||keys.some(key=>!EDITABLE_SECRET_FIELDS.includes(key)))throw Error('清除密钥字段无效');
+  for(const key of keys)delete secrets[key];
+}
+const localWebInstanceId=randomUUID();
+const localWebOwnerToken=randomUUID()+randomUUID();
+const webChannels=Object.freeze({
+ getBranding:'branding:get',getSettings:'settings:get',getAbout:'app:about',saveSettings:'settings:save',saveSettingsSection:'settings:save-section',
+ runNow:'task:run',refreshLogin:'task:login',stopTask:'task:stop',getState:'task:state',getLogs:'logs:get',
+ previewDateException:'inventory:date-exception-preview',sendDateException:'inventory:date-exception-send',getInventory:'inventory:get',
+ getMonthlySales:'monthly-sales:get',syncMonthlySales:'monthly-sales:sync',backfillMonthlySales:'monthly-sales:backfill',
+ openLogs:'logs:open',openData:'data:open',openRepository:'repository:open',openWebsite:'website:open',openReleaseNotes:'releases:open',
+ getIntegration:'integration:get',getUpdateState:'update:get',checkForUpdates:'update:check',installUpdate:'update:install',
+ getLocalAccess:'local-access:get',createAiCredential:'local-access:create',revokeAiCredential:'local-access:revoke',openWeb:'local-access:open'
+});
+async function dispatchWebOperation(name,payload={},context={}) {
+  if(name==='getCapabilities')return runtimeCapabilities();
+  if(name==='executeCli'){
+    const response=await executeCliRequest(payload.request);
+    if(response.lines)return {...response,lines:redactDiagnosticValue(response.lines,await diagnosticSensitiveValues())};
+    return response;
+  }
+  if(name==='runNow')return runProcessAndWait('sync','web');
+  if(name==='refreshLogin')return runProcessAndWait('login','web');
+  if(name==='syncMonthlySales')return runProcessAndWait('monthly-sales','web',{month:assertMonthInput(payload.month||latestCompleteMonth())});
+  if(name==='backfillMonthlySales')return runProcessAndWait('monthly-backfill','web',validateBackfillRange(payload));
+  if(name==='getEditableSecrets')return {};
+  const channel=webChannels[name];
+  if(!channel||!operationHandlers.has(channel))throw Error('不支持的本机操作');
+  const value=await operationHandlers.get(channel)({localContext:context},payload);
+  return name==='getLogs'?redactDiagnosticValue(value,await diagnosticSensitiveValues()):value;
+}
+function browserAssets() {
+ const assets={'/':rendererPath};
+ for(const file of ['renderer.js','web-adapter.js','styles.css','daily-work.css'])assets['/'+file]=path.join(desktopDir,'renderer',file);
+ for(const file of ['loading-screen.css','loading-screen.mjs','loading-screen-auto.mjs','ui/tokens.css','ui/base.css','ui/components.css','ui/vendor/gridjs.css'])assets['/shared/'+file]=path.join(desktopDir,'shared',file);
+ assets['/assets/lingtu-icon.png']=path.join(desktopDir,'assets','lingtu-icon.png');
+ for(const file of ['gridjs/dist/theme/mermaid.min.css','gridjs/dist/gridjs.production.min.js','echarts/dist/echarts.min.js'])assets['/node_modules/'+file]=path.join(componentAppRoot,'node_modules',file);
+ return assets;
+}
+async function verifyLocalAiToken(token) {
+ if(typeof token!=='string'||token.length>256)return null;
+ const hash=createHash('sha256').update(token).digest('hex');
+ const credentials=(await readSecrets()).localWebCredentials;
+ if(!Array.isArray(credentials))return null;
+ const record=credentials.find(item=>item.hash===hash);
+ return record?{id:record.id,write:record.write===true}:null;
+}
+async function openLocalWeb() {
+ if(!localWeb)throw Error('本机网页服务尚未启动');
+ await shell.openExternal(localWeb.openUrl());
+ return {opened:true};
+}
+async function prepareLocalExit() {
+ if(runningChild||runningTaskPromise||dateExceptionSending){
+  const answer=await dialog.showMessageBox({type:'warning',message:'云仓任务正在运行，退出可能中断采集或发送。',buttons:['继续运行','退出云仓'],defaultId:0,cancelId:0});
+  if(answer.response!==1)return false;
+  if(dateExceptionSending){await dialog.showMessageBox({type:'info',message:'正在发送报告，请等待发送结束后退出。'});return false;}
+  await stopCurrentTask();
+ }
+ clearTimeout(scheduleTimer);scheduleTimer=null;
+ await localWeb?.stop();
+ await removeDiscovery(app.getPath('userData'),localWebInstanceId);
+ return true;
+}
+function exitLocalOwner(){app.quit();}
+
+async function startLocalWeb() {
+ const rawPort=process.argv.find(value=>value.startsWith('--web-port='))?.slice(11);
+ const port=rawPort===undefined?(testLedger?0:17891):Number(rawPort);
+ if(!Number.isInteger(port)||port<0||port>65535||(port===0&&!testLedger))throw Error('本机网页端口无效');
+ localWeb=createLocalWebServer({version:componentVersion,port,instanceId:localWebInstanceId,ownerToken:localWebOwnerToken,stateDir:path.join(appDataDir(),'state'),assets:browserAssets(),verifyBearer:verifyLocalAiToken,dispatch:dispatchWebOperation});
+ try{
+  const origin=await localWeb.start();
+  await writeDiscovery(app.getPath('userData'),{pid:process.pid,origin,instanceId:localWebInstanceId,ownerToken:localWebOwnerToken});
+ }catch(error){await localWeb.stop().catch(()=>{});localWeb=null;throw Error('本机网页服务启动失败：端口可能已被其他程序使用，或配置目录不可写。');}
+ localTray=new Tray(nativeImage.createFromPath(path.join(desktopDir,'assets','lingtu-icon.png')));
+ localTray.setToolTip('菜鸟云仓');
+ const show=()=>{if(!mainWindow||mainWindow.isDestroyed())createWindow();mainWindow.show();mainWindow.focus();};
+ localTray.setContextMenu(Menu.buildFromTemplate([
+  {label:'打开菜鸟云仓',click:show},{label:'打开网页版',click:()=>void openLocalWeb()},
+  {type:'separator'},{label:'退出菜鸟云仓',click:()=>void exitLocalOwner()}
+ ]));
+ localTray.on('double-click',show);
+}
+registerOperation('local-access:get',async()=>({origin:localWeb?.address||'',credentials:((await readSecrets()).localWebCredentials||[]).map(({id,write})=>({id,write}))}));
+registerOperation('local-access:open',event=>{if(!trustedUiEvent(event))throw Error('无权打开网页版');return openLocalWeb();});
+registerOperation('local-access:create',async(event,payload={})=>{
+ if(!trustedUiEvent(event)||workbenchManaged||payload.confirmed!==true||typeof payload.write!=='boolean')throw Error('需要明确确认 AI 访问权限');
+ const secrets=await readSecrets();
+ const token='cw_'+randomUUID().replaceAll('-','')+randomUUID().replaceAll('-','');
+ const record={id:randomUUID(),write:payload.write,hash:createHash('sha256').update(token).digest('hex')};
+ const previous=Array.isArray(secrets.localWebCredentials)?secrets.localWebCredentials:[];
+ if(previous.length>=10)throw Error('最多保存 10 个 AI 凭据，请先撤销旧凭据');
+ await encryptSecrets({...secrets,localWebCredentials:[...previous,record]});
+ publish('settings:refresh');
+ return {id:record.id,token,write:record.write};
+});
+registerOperation('local-access:revoke',async(event,payload={})=>{
+ if(!trustedUiEvent(event)||payload.confirmed!==true||typeof payload.id!=='string'||payload.id.length>80)throw Error('撤销凭据参数无效');
+ const secrets=await readSecrets();
+ await encryptSecrets({...secrets,localWebCredentials:(secrets.localWebCredentials||[]).filter(item=>item.id!==payload.id)});
+ publish('settings:refresh');return {revoked:true};
+});
+
+registerOperation("settings:get", async () => publicSettings());
+registerOperation("branding:get", () => currentBranding());
+registerOperation("app:about", () => ({ version: componentVersion, build: readBuildInfo(), changelog: workbenchManaged ? CHANGELOG : STANDALONE_CHANGELOG }));
+registerOperation("secrets:get-editable", async (event) => {
   if (event.sender !== mainWindow?.webContents) throw new Error("无权读取敏感设置");
   if (runtimeMode() === "client") return {};
   const secrets = await readSecrets();
   return Object.fromEntries(EDITABLE_SECRET_FIELDS.map((key) => [key, String(secrets[key] || "")]));
 });
-ipcMain.handle("settings:save", async (_event, payload = {}) => {
+registerOperation("settings:save", async (_event, payload = {}) => {
   if(dateExceptionSending)throw Error("特殊发送期间不能修改配置，请稍后保存");
   const currentSecrets = await readSecrets();
   const incomingSecrets = payload.secrets || {};
@@ -1003,6 +1148,7 @@ ipcMain.handle("settings:save", async (_event, payload = {}) => {
     if (value) mergedSecrets[key] = value;
     else if(key === "telegramProxyUrl" && Object.prototype.hasOwnProperty.call(incomingSecrets,key)) delete mergedSecrets[key];
   }
+  clearIncomingSecrets(mergedSecrets, payload.clearSecrets);
   const settings = normalizeSettings(payload.settings || {});
   const validation = validateSettings(settings, secretFlags(mergedSecrets));
   if (!validation.ok) throw new Error(validation.errors.join("；"));
@@ -1010,9 +1156,10 @@ ipcMain.handle("settings:save", async (_event, payload = {}) => {
   await encryptSecrets(mergedSecrets);
   configureSchedule();
   appendLog("配置已保存，敏感字段已使用 Windows 安全存储加密。", "success");
+  publish("settings:refresh");
   return publicSettings();
 });
-ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
+registerOperation("settings:save-section", async (_event, payload = {}) => {
   if(dateExceptionSending)throw Error("特殊发送期间不能修改配置，请稍后保存");
   const section = String(payload.section || "");
   if(section==='runtime')throw Error(workbenchManaged ? '连接与运行角色由工作台 Tailscale 设置统一管理' : '独立版使用本机运行模式，无需配置远程运行角色');
@@ -1036,6 +1183,7 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
     if (value) mergedSecrets[key] = value;
     else if(key === "telegramProxyUrl" && Object.prototype.hasOwnProperty.call(incomingSecrets,key)) delete mergedSecrets[key];
   }
+  clearIncomingSecrets(mergedSecrets, payload.clearSecrets);
   const settings = normalizeSettings({ ...currentSettings, ...(payload.settings || {}) });
   if (section === "runtime") delete settings.firstRunPending;
   const validation = validator(settings, secretFlags(mergedSecrets));
@@ -1047,13 +1195,14 @@ ipcMain.handle("settings:save-section", async (_event, payload = {}) => {
   if (section === "runtime") await configureRemoteService();
   const sectionNames = { runtime: "运行模式", account: "菜鸟账号", robot: "通知渠道", automation: "自动任务", updates: "在线升级" };
   appendLog(`${sectionNames[section]}设置已保存。`, "success");
+  publish("settings:refresh");
   return publicSettings();
 });
-ipcMain.handle('inventory:date-exception-preview',async event=>{
+registerOperation('inventory:date-exception-preview',async event=>{
   assertExceptionalSendAllowed(event);
   return exceptionalInventoryService().preview();
 });
-ipcMain.handle('inventory:date-exception-send',async(event,payload)=>{
+registerOperation('inventory:date-exception-send',async(event,payload)=>{
   assertExceptionalSendAllowed(event);
   const release=acquireTaskLock('date-exception-send');
   dateExceptionSending=true;emitState();
@@ -1062,33 +1211,33 @@ ipcMain.handle('inventory:date-exception-send',async(event,payload)=>{
     return result;
   }finally{dateExceptionSending=false;release();emitState();}
 });
-ipcMain.handle("task:run", () => runtimeMode() === "client"
+registerOperation("task:run", () => runtimeMode() === "client"
   ? remoteRequest("/api/v1/jobs", { method: "POST", body: { type: "sync" } })
   : startProcess("sync", "manual"));
-ipcMain.handle("task:login", () => runtimeMode() === "client" ? openRemoteLogin() : startProcess("login", "manual"));
-ipcMain.handle("task:stop", () => runtimeMode() === "client"
+registerOperation("task:login", () => runtimeMode() === "client" ? openRemoteLogin() : startProcess("login", "manual"));
+registerOperation("task:stop", () => runtimeMode() === "client"
   ? remoteRequest("/api/v1/jobs/stop", { method: "POST", body: {} })
   : stopCurrentTask());
-ipcMain.handle("task:state", () => runtimeMode() === "client" ? remoteRequest("/api/v1/task") : emitState());
-ipcMain.handle("logs:get", () => runtimeMode() === "client" ? [] : recentLog);
-ipcMain.handle("inventory:get", () => runtimeMode() === "client" ? remoteRequest("/api/v1/inventory") : readCainiaoInventory(inventoryDatabasePath()));
-ipcMain.handle("monthly-sales:get", (_event, filters = {}) => runtimeMode() === "client"
+registerOperation("task:state", () => runtimeMode() === "client" ? remoteRequest("/api/v1/task") : emitState());
+registerOperation("logs:get", () => runtimeMode() === "client" ? [] : recentLog);
+registerOperation("inventory:get", () => runtimeMode() === "client" ? remoteRequest("/api/v1/inventory") : readCainiaoInventory(inventoryDatabasePath()));
+registerOperation("monthly-sales:get", (_event, filters = {}) => runtimeMode() === "client"
   ? remoteRequest(`/api/v1/monthly-sales?${new URLSearchParams(filters).toString()}`)
   : localMonthlySales(filters));
-ipcMain.handle("monthly-sales:sync", (_event, payload = {}) => {
+registerOperation("monthly-sales:sync", (_event, payload = {}) => {
   const month = assertMonthInput(payload.month || latestCompleteMonth());
   return runtimeMode() === "client"
     ? remoteRequest("/api/v1/jobs", { method: "POST", body: { type: "monthly-sales", month } })
     : startProcess("monthly-sales", "manual", { month });
 });
-ipcMain.handle("monthly-sales:backfill", (_event, payload = {}) => {
+registerOperation("monthly-sales:backfill", (_event, payload = {}) => {
   const range = validateBackfillRange(payload);
   return runtimeMode() === "client"
     ? remoteRequest("/api/v1/jobs", { method: "POST", body: { type: "monthly-backfill", ...range } })
     : startProcess("monthly-backfill", "manual", range);
 });
-ipcMain.handle("remote:login", () => openRemoteLogin());
-ipcMain.handle("remote:test", async () => {
+registerOperation("remote:login", () => openRemoteLogin());
+registerOperation("remote:test", async () => {
   try {
     const health = await remoteRequest("/api/v1/health");
     notifyRemoteConnection(true, "主服务器连接成功", health);
@@ -1098,29 +1247,39 @@ ipcMain.handle("remote:test", async () => {
     throw error;
   }
 });
-ipcMain.handle("logs:open", () => shell.openPath(logDir()));
-ipcMain.handle("data:open", () => shell.openPath(appDataDir()));
-for (const [channel, name] of [["repository:open", "repository"], ["website:open", "website"], ["releases:open", "releases"]]) ipcMain.handle(channel, async (event) => {
-  if (event.sender !== mainWindow?.webContents) throw new Error("无权打开外部链接");
+registerOperation("logs:open", () => shell.openPath(logDir()));
+registerOperation("data:open", () => shell.openPath(appDataDir()));
+for (const [channel, name] of [["repository:open", "repository"], ["website:open", "website"], ["releases:open", "releases"]]) registerOperation(channel, async (event) => {
+  if (!trustedUiEvent(event)) throw new Error("无权打开外部链接");
   const url = externalLink(name);
   await shell.openExternal(url);
   return { opened: true, url };
 });
-ipcMain.handle("integration:get", () => ({
+registerOperation("integration:get", () => ({
   cli: { command: process.execPath, args: [...componentLaunchArgs], examples: ["--cli status", "--cli doctor", "--cli debug-bundle", "--cli capabilities", "--cli sync --confirm-send"] },
   mcp: { command: process.execPath, args: [...componentLaunchArgs, "--mcp-stdio"] },
   runtime: { apiVersion: runtimeCapabilities().schemaVersion, extensionDirectory: extensionRoot(), modes: runtimeCapabilities().modes.map((mode) => mode.id) }
 }));
-ipcMain.handle("update:get", () => updater?.getState() || {
+registerOperation("update:get", () => updater?.getState() || {
   currentVersion: componentVersion, status: "idle", message: "尚未初始化"
 });
-ipcMain.handle("update:check", () => updater?.check() || Promise.reject(new Error("更新服务尚未初始化")));
-ipcMain.handle("update:install", () => updater?.install() || Promise.reject(new Error("更新服务尚未初始化")));
+registerOperation("update:check", () => updater?.check() || Promise.reject(new Error("更新服务尚未初始化")));
+registerOperation("update:install", async event => {
+  if(!trustedUiEvent(event))throw Error('无权安装更新');
+  if(!mainWindow||mainWindow.isDestroyed())createWindow();
+  mainWindow.show();mainWindow.focus();
+  const answer=await dialog.showMessageBox(mainWindow,{type:'question',message:'确认重启并安装已下载的菜鸟云仓更新？',buttons:['取消','安装更新'],defaultId:0,cancelId:0});
+  if(answer.response!==1)return {cancelled:true};
+  return updater?.install()||Promise.reject(Error('更新服务尚未初始化'));
+});
 
 function cliHelp() {
   return {
     usage: [
-      "云仓库存同步.exe --cli status",
+      "CainiaoWarehouse.exe --web",
+      "CainiaoWarehouse.exe --cli inventory",
+      "CainiaoWarehouse.exe --cli sales --year=2026",
+      "CainiaoWarehouse.exe --cli status",
       "云仓库存同步.exe --cli capabilities",
       "云仓库存同步.exe --cli doctor",
       "云仓库存同步.exe --cli debug-logs --level=error --limit=50",
@@ -1200,10 +1359,10 @@ async function sendLatestValidInventoryReport() {
   }
 }
 
-async function runCli() {
-  const args = process.argv.slice(cliArgumentIndex + 1);
-  const request = parseCliRequest(args);
+async function executeCliRequest(request) {
   if (request.command === "help") return { ok: true, ...cliHelp() };
+  if (request.command === "inventory") return {ok:true,inventory:readCainiaoInventory(inventoryDatabasePath())};
+  if (request.command === "sales") return {ok:true,sales:localMonthlySales(request.filters)};
   if (request.command === "status") return { ok: true, status: await interfaceStatus() };
   if (request.command === "capabilities") return { ok: true, capabilities: runtimeCapabilities() };
   if (request.command === "doctor") return { ok: true, diagnostics: await collectDiagnostics() };
@@ -1233,34 +1392,72 @@ async function runCli() {
   throw new Error(`未知 CLI 命令：${request.command}`);
 }
 
+async function runCli() {
+  const args = process.argv.slice(cliArgumentIndex + 1);
+  const request = parseCliRequest(args);
+  if (workbenchManaged || request.command === 'help') return executeCliRequest(request);
+  const owner = await ensureLocalOwner();
+  const result = await owner.call('executeCli', {request});
+  return result?.taskId ? owner.pollTask(result.taskId, {timeoutMs:15*60*1000}) : result;
+}
+async function ensureLocalOwner() {
+  let owner=await connectLocalOwner({profile:app.getPath('userData')});
+  if(owner)return owner;
+  const child=spawn(process.execPath,[...(app.isPackaged?[]:[componentAppRoot]),'--background','--user-data-dir='+app.getPath('userData'),...(testLedger?['--web-port=0']:[])],{env:{...process.env,ELECTRON_RUN_AS_NODE:undefined},windowsHide:true,detached:true,stdio:'ignore'});
+  child.unref();
+  for(let i=0;i<200;i++){
+    await new Promise(resolve=>setTimeout(resolve,100));
+    owner=await connectLocalOwner({profile:app.getPath('userData')});
+    if(owner)return owner;
+  }
+  throw Error('本机云仓后台未能启动，请打开应用检查端口或配置。');
+}
+
 function writeCliResult(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-app.on("second-instance", () => {
+app.on("second-instance", (_event, argv=[]) => {
   if (managedMaintenance) return;
-  if (!mainWindow) createWindow();
+  if (argv.includes('--background')) return;
+  if (argv.includes('--web')) {
+    if(startupReady)void openLocalWeb().catch(error=>appendLog(error.message,'error'));
+    else pendingWebOpen=true;
+    return;
+  }
+  if(!startupReady){pendingDesktopOpen=true;return;}
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
   if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
-  mainWindow.webContents.send("settings:refresh");
+  mainWindow.show();mainWindow.focus();
+  mainWindow.webContents.send('settings:refresh');
 });
 
 app.on("before-quit", event => {
+  if(localWeb&&!shutdownComplete){
+    event.preventDefault();
+    if(!shutdownPromise)shutdownPromise=prepareLocalExit().then(ready=>{
+      shutdownPromise=null;
+      if(ready){shutdownComplete=true;app.quit();}
+    }).catch(error=>{shutdownPromise=null;appendLog('退出清理未完成：'+sanitizeDiagnosticText(error.message),'error');});
+    return;
+  }
   cloudControl?.close();
   warehouseAgent?.close();
   warehouseAgent=null;
   quitting = true;
+  localTray?.destroy();
   if (mcpBridgeChild && !mcpBridgeChild.killed) mcpBridgeChild.kill();
   void stopRemoteService();
 });
 app.on("window-all-closed", () => {
-  if (managedCloud) return;
+  if (managedCloud || localWeb) return;
   const settings = readSettings();
   if (!headlessMode && settings.runtimeMode !== "server" && !settings.scheduleEnabled && !settings.monthlySalesEnabled) app.quit();
 });
 
 app.whenReady().then(async () => {
+  if(!singleInstance)return;
+  if(workbenchManaged && (webMode||backgroundMode))throw Error("托管组件不支持独立网页版启动，请使用菜鸟云仓独立安装版。");
   app.setAppUserModelId(workbenchManaged ? "com.diankouwujin.cainiao.inventory" : "com.wucheng.cainiao.warehouse");
   ensureWorkspace();
   installBundledDesks({source:path.join(desktopDir,'extensions','lingtu-desks'),workspace:appDataDir(),settingsPath:settingsPath()});
@@ -1342,13 +1539,14 @@ app.whenReady().then(async () => {
     });
     if (managedMaintenance) return;
   }
-  createWindow();
+  if(!managedCloud)await startLocalWeb();
+  if((!webMode && !backgroundMode)||pendingDesktopOpen)createWindow();
   const importedUpdateToken = await importBundledUpdateToken();
   if (importedUpdateToken) appendLog("在线升级凭据已内置并转存到 Windows 安全存储。", "success");
   updater = createUpdater({
     app: componentContext ? {isPackaged: app.isPackaged, getVersion: () => componentVersion} : app,
     getToken: async () => (await readSecrets()).githubUpdateToken,
-    onState: (state) => mainWindow?.webContents.send("update:state", state),
+    onState: (state) => publish("update:state", state),
     log: appendLog
   });
   if (!managedCloud) updater.initialize();
@@ -1359,7 +1557,14 @@ app.whenReady().then(async () => {
   } catch {
     // The startup error is already recorded and the settings UI remains available for repair.
   }
+  startupReady=true;
+  if(!managedCloud && (webMode||pendingWebOpen))await openLocalWeb();
   appendLog("云仓库存同步已启动。", "success");
   if (configurationWarmError) appendLog(`配置自检失败：${configurationWarmError.message}`, "error");
   else appendLog("配置与 Windows 安全存储自检通过。", "success");
+}).catch(async error=>{
+  console.error('菜鸟云仓启动失败：'+sanitizeDiagnosticText(error.message));
+  if(!headlessMode && !testLedger)dialog.showErrorBox('菜鸟云仓启动失败',sanitizeDiagnosticText(error.message));
+  await localWeb?.stop().catch(()=>{});
+  app.exit(1);
 });

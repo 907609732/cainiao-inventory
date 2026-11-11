@@ -1,6 +1,6 @@
 {
   "name": "cainiao-inventory-windows-workspace",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,9 @@
     "test:ui": "npm --prefix windows/workbench run test:ui",
     "docs:features": "npm --prefix windows/workbench run docs:features",
     "build:extension": "node scripts/build-windows.mjs",
-    "docs:screenshots": "npm --prefix windows/workbench run docs:screenshots"
+    "docs:screenshots": "npm --prefix windows/workbench run docs:screenshots",
+    "web": "npm --prefix windows/workbench run web",
+    "test:web": "npm --prefix windows/workbench run test:ui:web"
   },
   "engines": {
     "node": ">=22.0.0"

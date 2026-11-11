@@ -1,6 +1,10 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("inventoryApp", {
+  getLocalAccess: () => ipcRenderer.invoke('local-access:get'),
+  openWeb: () => ipcRenderer.invoke('local-access:open'),
+  createAiCredential: payload => ipcRenderer.invoke('local-access:create',payload),
+  revokeAiCredential: payload => ipcRenderer.invoke('local-access:revoke',payload),
   getBranding: () => ipcRenderer.invoke("branding:get"),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   getAbout: () => ipcRenderer.invoke("app:about"),

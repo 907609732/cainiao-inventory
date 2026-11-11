@@ -1,0 +1,71 @@
+name: Local web installer acceptance
+
+on:
+  push:
+    branches: [codex/local-web-desktop]
+    paths: ['windows/workbench/**', '.github/workflows/web-installer.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [fresh, upgrade]
+    defaults:
+      run:
+        working-directory: windows/workbench
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: windows/workbench/package-lock.json
+      - run: npm ci --workspaces=false --no-audit --no-fund
+      - run: node node_modules/electron/install.js
+      - run: npm run build -- --publish never
+      - name: Verify packaged browser and background modes
+        run: |
+          $env:WAREHOUSE_TEST_EXE=(Resolve-Path 'dist/win-unpacked/CainiaoWarehouse.exe').Path
+          npm run test:ui:web
+          if($LASTEXITCODE -ne 0){throw 'Packaged web UI failed'}
+          node tests/local-web-lifecycle.mjs
+          if($LASTEXITCODE -ne 0){throw 'Packaged lifecycle failed'}
+      - name: Stage candidate and authentic coexistence installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCENARIO: ${{ matrix.scenario }}
+        run: |
+          New-Item -ItemType Directory C:\Input,C:\WorkbenchInput,C:\Kit,C:\Results -Force | Out-Null
+          $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
+          $file="CainiaoWarehouse-Setup-$version-x64.exe"
+          Copy-Item -LiteralPath "dist/$file" C:\Input
+          Invoke-WebRequest 'https://github.com/907609732/wucheng-ecommerce-erp-v2/releases/download/0.11.4/CloudWarehouseInventorySync-Setup-0.11.4-x64.exe' -OutFile C:\WorkbenchInput\CloudWarehouseInventorySync-Setup-0.11.4-x64.exe
+          $spec=@{file=$file;version=$version;sha256=(Get-FileHash "dist/$file").Hash.ToLowerInvariant();webEntry=$true;workbenchFile='CloudWarehouseInventorySync-Setup-0.11.4-x64.exe';workbenchSha256='700d64b5878929384864a828d63f6cc555f603bf540aea0f314f3b621af256ff'}
+          if($env:SCENARIO -eq 'upgrade'){
+            gh release download v0.9.7 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.9.7-x64.exe --dir C:\Input
+            if($LASTEXITCODE -ne 0){throw 'Previous cloud download failed'}
+            $spec.previousFile='CainiaoWarehouse-Setup-0.9.7-x64.exe'
+            $spec.previousSha256='ef82cbeb11fa29a036093579b9b4355a5f9b3f27e4c0cc9bfef7e37d38b41bc6'
+            $spec.previousVersion='0.9.7'
+          }
+          $spec | ConvertTo-Json | Set-Content C:\Kit\candidate.json
+      - name: Test real installation and both launch entries
+        run: |
+          & ./tests/windows-installer-sandbox.ps1 -HostedRunner
+          $report=Get-Content C:\Results\result.json -Raw | ConvertFrom-Json
+          $report | ConvertTo-Json -Depth 8
+          if(!$report.ok){throw 'Installer acceptance failed'}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-web-install-${{ matrix.scenario }}
+          path: C:\Results\
+          if-no-files-found: warn

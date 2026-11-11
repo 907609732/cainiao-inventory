@@ -87,10 +87,10 @@ export async function connectLocalOwner({profile,fetchImpl=fetch,isAlive=running
       do {
         const task=unwrap(await request(`/api/v1/tasks/${taskId}`,{headers},Math.max(1,Math.min(timeoutMs,end-Date.now()))));
         if(['completed','succeeded','success'].includes(task?.status))return task.value;
-        if(['failed','cancelled'].includes(task?.status))throw new Error('Local backend task failed');
+        if(['failed','cancelled','unknown'].includes(task?.status))throw new Error(`Local backend task ${taskId}: ${task.status}; verify before submitting again`);
         await new Promise(r=>setTimeout(r,Math.min(250,Math.max(1,end-Date.now()))));
       }while(Date.now()<end);
-      throw new Error('Local backend task is still running; retain its task ID');
+      throw new Error(`Local backend task ${taskId} is still running; verify before submitting again`);
     }
   };
 }

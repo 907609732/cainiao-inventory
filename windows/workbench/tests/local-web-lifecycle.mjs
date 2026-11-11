@@ -1,0 +1,40 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {_electron} from 'playwright';
+process.chdir(path.resolve(import.meta.dirname,'..'));
+const profile=fs.mkdtempSync(path.join(os.tmpdir(),'cainiao-web-lifecycle-'));
+const env={...process.env};
+for(const key of Object.keys(env))if(/^(LINGTU_|ERP_|CAINIAO_|DINGTALK_)/.test(key)||key==='ELECTRON_RUN_AS_NODE')delete env[key];
+Object.assign(env,{LINGTU_ISOLATED_TEST:'1',LINGTU_TEST_LEDGER:'1',CAINIAO_APP_DATA_DIR:path.join(profile,'workspace'),ERP_DATA_DIR:path.join(profile,'workspace/data')});
+fs.writeFileSync(path.join(profile,'settings.json'),JSON.stringify({runtimeMode:'standalone',scheduleEnabled:false,monthlySalesEnabled:false,startAtLogin:false,dingtalkEnabled:false}));
+const exe=process.env.WAREHOUSE_TEST_EXE||path.resolve('node_modules/electron/dist/electron.exe');
+const args=[...(process.env.WAREHOUSE_TEST_EXE?[]:['.']),'--user-data-dir='+profile,'--web-port=0'];
+const discovery=path.join(profile,'workspace/state/local-web.json');
+const launch=mode=>new Promise((resolve,reject)=>{const p=spawn(exe,[...args,...mode],{env,windowsHide:true,stdio:'ignore'});p.once('error',reject);p.once('close',code=>{assert.equal(code,0);resolve();});});
+let app;
+try{
+ app=await _electron.launch({executablePath:exe,args:[...args,'--background'],env});
+ let owner;
+ for(let i=0;i<100;i++){if(fs.existsSync(discovery)){owner=JSON.parse(fs.readFileSync(discovery,'utf8'));break;}await new Promise(r=>setTimeout(r,100));}
+ assert.ok(owner,'background owner starts without a window');
+ assert.equal(app.windows().length,0);
+ await app.evaluate(({shell})=>{shell.openExternal=async url=>{globalThis.openedWebUrl=url;};});
+ await launch(['--web']);
+ const url=await app.evaluate(()=>globalThis.openedWebUrl);
+ assert.match(url,/\/#token=.+/);
+ assert.equal(app.windows().length,0);
+ const window=app.waitForEvent('window');await launch([]);const page=await window;
+ await page.waitForFunction(()=>window.inventoryApp);
+ assert.equal((await page.evaluate(()=>window.inventoryApp.getLocalAccess())).origin,owner.origin);
+ assert.equal(JSON.parse(fs.readFileSync(discovery,'utf8')).pid,owner.pid);
+ await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());
+ assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isVisible()),false);
+ assert.equal((await fetch(owner.origin+'/api/v1/health')).status,200);
+ await app.close();app=null;
+ assert.equal(fs.existsSync(discovery),false,'graceful exit removes discovery before process exits');
+ await assert.rejects(fetch(owner.origin+'/api/v1/health'));
+ console.log(JSON.stringify({ok:true,packaged:Boolean(process.env.WAREHOUSE_TEST_EXE),backgroundFirst:true,webStartupReusesOwner:true,desktopStartupReusesOwner:true,windowCloseRetainsBackend:true,gracefulExitCleansService:true}));
+}finally{await app?.close().catch(()=>{});fs.rmSync(profile,{recursive:true,force:true});}

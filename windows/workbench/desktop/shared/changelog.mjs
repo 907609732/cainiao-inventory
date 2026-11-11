@@ -1,4 +1,5 @@
 export const STANDALONE_CHANGELOG = [
+ {version:'0.9.8',date:'2026-11-11',title:'本机网页与 AI 共用后台',changes:['增加网页版入口与托盘，应用和浏览器共用一份数据和任务状态','新增受控本机 API、只读 AI 凭据及库存销量 MCP 查询','浏览器不读取已保存密钥，支持显式替换或清除']},
  {version:'0.9.7',date:'2026-11-01',title:'精简云仓设置与维护更新',changes:['移除应用内使用说明，合并维护状态、版本与软件更新','设置底部提供官网和 GitHub 仓库，完整更新记录通过外部页面查看','新增飞书、企业微信、邮箱及 Telegram 多渠道配置与发送','库存仅来源日期偏旧时，可二次确认后特殊发送带日期风险标记的报告']},
  {version:'0.9.6',date:'2026-11-01',title:'独立软件界面文案清理',changes:['统一启动页、页面标题和本机自动任务说明','使用说明、技术原理和迭代历史仅展示独立软件相关内容']},
  {version:'0.9.5',date:'2026-11-01',title:'独立安装身份与数据隔离',changes:['使用独立的程序目录、数据目录、快捷方式和卸载项','新增同机共存及单独卸载的回归验收']},
@@ -9,6 +10,7 @@ export const STANDALONE_CHANGELOG = [
 export const CHANGELOG = [
  STANDALONE_CHANGELOG[0],
  STANDALONE_CHANGELOG[1],
+ STANDALONE_CHANGELOG[2],
  {version:'0.9.5',date:'2026-11-01',title:'修复与电商工作台的安装身份冲突',changes:['菜鸟云仓使用独立安装标识、程序目录和快捷方式','独立版不再读取工作台默认数据目录或位置注册表','新增工作台与云仓同时安装及单独卸载的回归检查']},
  {version:'0.9.4',date:'2026-11-01',title:'Windows 独立源码整理',changes:['移除 macOS 插件环境和旧 ERP 客户端残留','统一 Windows 源码启动、测试和安装器构建入口']},
  {version:'0.9.3',date:'2026-11-01',title:'独立云仓 Windows 安装版',changes:['从独立菜鸟云仓源码打包 Windows 安装器','安装包与在线更新统一使用 cainiao-inventory GitHub 仓库']},

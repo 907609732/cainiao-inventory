@@ -20,6 +20,10 @@ test('local transport confines assets, authenticates sessions, blocks cross-site
  const cookie=session.headers.get('set-cookie').split(';')[0];const {csrf}=await session.json();
  assert.match(session.headers.get('set-cookie'),/HttpOnly/); assert.equal((await call('/api/v1/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token})})).status,401);
  assert.equal((await call('/api/v1/session',{headers:{cookie}})).status,200);
+ const secondToken=new URL(server.openUrl()).hash.slice(1).replace(/^token=/,'');
+ const sameSession=await call('/api/v1/session',{method:'POST',headers:{'content-type':'application/json',cookie},body:JSON.stringify({token:secondToken})});
+ assert.equal((await sameSession.json()).csrf,csrf,'opening another tab preserves existing session and task identity');
+ assert.equal(sameSession.headers.get('set-cookie').split(';')[0],cookie);
  const req=(op,body={},headers={})=>call('/api/v1/call/'+op,{method:'POST',headers:{'content-type':'application/json',cookie,...headers},body:JSON.stringify(body)});
  assert.equal((await req('runNow',{}, {'idempotency-key':'one'})).status,403);
  assert.equal((await req('getState',{}, {origin:'https://evil.invalid'})).status,403);

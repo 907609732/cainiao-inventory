@@ -125,6 +125,15 @@ try {
       }),
     "http://127.0.0.1:" + server.address().port + "/synthetic",
   );
+  const access = await page.evaluate(() => window.inventoryApp.getLocalAccess());
+  const ai = await page.evaluate(() => window.inventoryApp.createAiCredential({write:true,confirmed:true}));
+  const aiPreviewResponse = await fetch(access.origin+'/api/v1/call/previewDateException', {
+    method:'POST',headers:{authorization:'Bearer '+ai.token,'content-type':'application/json'},body:'{}',
+  });
+  assert.equal(aiPreviewResponse.status,200);
+  const aiPreview = await aiPreviewResponse.json();
+  assert.equal(typeof aiPreview.value.token,'string');
+  assert.equal(requests.length,0,'AI preview cannot send a report');
   await page.locator("#dateExceptionSend").waitFor({ state: "visible" });
   await page.locator("#dateExceptionSend").click();
   await page.locator("#dateExceptionDialog").waitFor({ state: "visible" });
