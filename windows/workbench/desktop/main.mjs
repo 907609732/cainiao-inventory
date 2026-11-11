@@ -1405,7 +1405,7 @@ async function ensureLocalOwner() {
   if(owner)return owner;
   const child=spawn(process.execPath,[...(app.isPackaged?[]:[componentAppRoot]),'--background','--user-data-dir='+app.getPath('userData'),...(testLedger?['--web-port=0']:[])],{env:{...process.env,ELECTRON_RUN_AS_NODE:undefined},windowsHide:true,detached:true,stdio:'ignore'});
   child.unref();
-  for(let i=0;i<200;i++){
+  for(let i=0;i<600;i++){
     await new Promise(resolve=>setTimeout(resolve,100));
     owner=await connectLocalOwner({profile:app.getPath('userData')});
     if(owner)return owner;

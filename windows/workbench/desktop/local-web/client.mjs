@@ -31,7 +31,7 @@ async function userOnly(directory) {
   if (process.platform !== 'win32') return fs.chmod(directory,0o700);
   // Replace the DACL, rather than adding a grant while retaining broader explicit access.
   const script = '$p=$env:CAINIAO_DISCOVERY_ACL_PATH; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User; $acl=New-Object System.Security.AccessControl.DirectorySecurity; $acl.SetOwner($sid); $acl.SetAccessRuleProtection($true,$false); $rule=New-Object System.Security.AccessControl.FileSystemAccessRule($sid,"FullControl","ContainerInherit,ObjectInherit","None","Allow"); $acl.AddAccessRule($rule); [System.IO.Directory]::SetAccessControl($p,$acl)';
-  await run('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,env:{...process.env,CAINIAO_DISCOVERY_ACL_PATH:directory},timeout:10000});
+  await run('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,env:{...process.env,CAINIAO_DISCOVERY_ACL_PATH:directory},timeout:30000});
 }
 export async function writeDiscovery(profile, value) {
   validate(value);
