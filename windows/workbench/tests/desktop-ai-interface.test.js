@@ -8,10 +8,32 @@ import { AI_TOOLS, parseCliRequest } from "../desktop/shared/ai-interface.mjs";
 import { diagnosticHealth, diagnosticLogLevel, sanitizeDiagnosticText, searchDiagnosticLines } from "../desktop/shared/diagnostics.mjs";
 import { discoverExtensions } from "../desktop/shared/extensions.mjs";
 import { createRuntimeCapabilities } from "../desktop/shared/runtime-contract.mjs";
+import {Client} from '@modelcontextprotocol/client';
+import {InMemoryTransport} from '@modelcontextprotocol/server';
+import {createInventoryMcpServer,createWorkbenchMcpServer} from '../desktop/mcp-server.mjs';
+
+test('MCP queries read synthetic inventory and typed sales filters without starting tasks',async t=>{
+ const filters={year:2026,selectedMonth:'2026-10',scope:'sku',seriesMode:'all',sku:'DEMO-1'};
+ const server=createInventoryMcpServer({version:'test',getInventory:async()=>({rows:[{sku:'DEMO-1',stock:7}]}),getMonthlySales:async actual=>{assert.deepEqual(actual,filters);return {quantity:12};}});
+ const client=new Client({name:'query-test',version:'1'});const [a,b]=InMemoryTransport.createLinkedPair();t.after(()=>client.close());t.after(()=>server.close());await server.connect(a);await client.connect(b);
+ assert.equal(client.getServerVersion().name,'cainiao-cloud-warehouse');
+ const tools=(await client.listTools()).tools;
+ for(const name of ['inventory_query','inventory_monthly_sales'])assert.equal(tools.find(tool=>tool.name===name)?.annotations?.readOnlyHint,true);
+ assert.deepEqual(JSON.parse((await client.callTool({name:'inventory_query',arguments:{}})).content[0].text),{rows:[{sku:'DEMO-1',stock:7}]});
+ assert.deepEqual(JSON.parse((await client.callTool({name:'inventory_monthly_sales',arguments:filters})).content[0].text),{quantity:12});
+ const invalid=await client.callTool({name:'inventory_monthly_sales',arguments:{selectedMonth:'2026-99'}});assert.equal(invalid.isError,true);
+});
+test('MCP query failures redact credentials and workbench retains its identity',async t=>{
+ const server=createInventoryMcpServer({version:'test',getInventory:async()=>{throw Error('password=demo-secret');}});const client=new Client({name:'query-errors',version:'1'});const [a,b]=InMemoryTransport.createLinkedPair();t.after(()=>client.close());t.after(()=>server.close());await server.connect(a);await client.connect(b);
+ const failure=await client.callTool({name:'inventory_query',arguments:{}});assert.equal(failure.isError,true);assert.doesNotMatch(JSON.stringify(failure),/demo-secret/);
+ const workbench=createWorkbenchMcpServer({version:'test',dispatch:async()=>({})});const wc=new Client({name:'workbench-test',version:'1'});const [c,d]=InMemoryTransport.createLinkedPair();t.after(()=>wc.close());t.after(()=>workbench.close());await workbench.connect(c);await wc.connect(d);assert.equal(wc.getServerVersion().name,'wucheng-ecommerce-erp-v2');
+});
 
 test("AI interface exposes the intended MCP tool set", () => {
   assert.deepEqual(AI_TOOLS, [
     "inventory_status",
+    "inventory_query",
+    "inventory_monthly_sales",
     "inventory_recent_logs",
     "inventory_debug_diagnose",
     "inventory_debug_search_logs",
@@ -25,6 +47,8 @@ test("AI interface exposes the intended MCP tool set", () => {
 });
 
 test("CLI read-only commands need no confirmation", () => {
+  assert.deepEqual(parseCliRequest(['inventory']),{command:'inventory'});
+  assert.deepEqual(parseCliRequest(['sales','--year=2026','--month=2026-10','--scope=multi','--series-mode=decliners','--sku=DEMO-1']),{command:'sales',filters:{year:'2026',selectedMonth:'2026-10',scope:'multi',seriesMode:'decliners',sku:'DEMO-1'}});
   assert.deepEqual(parseCliRequest(["status"]), { command: "status" });
   assert.deepEqual(parseCliRequest(["capabilities"]), { command: "capabilities" });
   assert.deepEqual(parseCliRequest(["doctor"]), { command: "doctor" });
@@ -47,10 +71,11 @@ test("extension CLI keeps trust and side effects behind explicit confirmation", 
   });
 });
 
-test("runtime capabilities advertise source, portable, installed and extension modes", () => {
+test("runtime capabilities advertise local web and current installation modes", () => {
   const capabilities = createRuntimeCapabilities({ version: "0.4.1", packaged: false, executable: "electron.exe", workspace: "C:\\workspace", sourceRoot: "C:\\repo" });
   assert.equal(capabilities.schemaVersion, "1.0.0");
-  assert.deepEqual(capabilities.modes.map((mode) => mode.id), ["source", "cli", "mcp-stdio", "portable", "installed"]);
+  assert.deepEqual(capabilities.modes.map((mode) => mode.id), ["source", "cli", "mcp-stdio", "local-web", "installed"]);
+  assert.ok(capabilities.cliCommands.includes('inventory'));assert.ok(capabilities.cliCommands.includes('sales'));
   assert.equal(capabilities.extensions.trustRequired, true);
   assert.equal(capabilities.application.source.editable, true);
 });

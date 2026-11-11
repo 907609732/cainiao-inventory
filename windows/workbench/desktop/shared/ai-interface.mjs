@@ -3,6 +3,8 @@ export const BUSINESS_TOOLS=Object.freeze(BUSINESS_ACTIONS.map(action=>'business
 
 export const AI_TOOLS = Object.freeze([
   "inventory_status",
+  "inventory_query",
+  "inventory_monthly_sales",
   "inventory_recent_logs",
   "inventory_debug_diagnose",
   "inventory_debug_search_logs",
@@ -51,6 +53,17 @@ export function parseCliRequest(args = []) {
     if(module!==undefined&&!moduleIds.has(module))throw Error('未知工作台模块');
     if(['query','tasks','prepare'].includes(action)&&!module)throw Error('请提供 --module=<模块标识>');
     return {command,action,...(module?{module}:{}),params:cliObject(values),confirmSideEffect:values.includes('--confirm-side-effect')};
+  }
+  if (command === "inventory") return {command};
+  if (command === "sales") {
+    const filters={};
+    for(const [flag,key] of [['--year=','year'],['--month=','selectedMonth'],['--sku=','sku'],['--scope=','scope'],['--series-mode=','seriesMode']]){
+      const value=values.find(item=>item.startsWith(flag))?.slice(flag.length);
+      if(value!==undefined)filters[key]=value;
+    }
+    if(filters.year&&!/^\d{4}$/.test(filters.year))throw Error('年份必须为四位数字');
+    if(filters.selectedMonth&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(filters.selectedMonth))throw Error('月份必须为 YYYY-MM');
+    return {command,filters};
   }
   if (command === "status") return { command };
   if (command === "capabilities") return { command };

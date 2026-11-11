@@ -15,11 +15,28 @@ function safeError(error) {
   return sanitizeDiagnosticText(error?.message || error || '未知错误');
 }
 
-export function createInventoryMcpServer({ version, getStatus, getLogs, getDiagnostics, searchDebugLogs, getCapabilities, exportDebugBundle, listExtensions, callExtension, runSync, refreshLogin, onClose }) {
+export function createInventoryMcpServer({ name = 'cainiao-cloud-warehouse', version, getInventory, getMonthlySales, getStatus, getLogs, getDiagnostics, searchDebugLogs, getCapabilities, exportDebugBundle, listExtensions, callExtension, runSync, refreshLogin, onClose }) {
   const server = new McpServer(
-    { name: "wucheng-ecommerce-erp-v2", version },
+    { name, version },
     { instructions: "先调用 inventory_runtime_capabilities 发现运行模式和扩展，再用 inventory_debug_diagnose / inventory_debug_search_logs 定位故障。不得绕过同步确认、库存校验或扩展信任边界。" }
   );
+
+  const readAnnotations={readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false};
+  const query=callback=>async args=>{try{return result(await callback(args));}catch(error){return result({error:safeError(error)},true);}};
+  server.registerTool('inventory_query',{
+    description:'只读查询本机已保存的云仓库存；不会采集、同步或发送消息。',
+    inputSchema:z.object({}).strict(),annotations:readAnnotations
+  },query(()=>getInventory()));
+  server.registerTool('inventory_monthly_sales',{
+    description:'只读查询本机已保存的月销量和趋势；不会启动采集或补抓。',
+    inputSchema:z.object({
+      year:z.union([z.number().int().min(1000).max(9999),z.string().regex(/^\d{4}$/)]).optional(),
+      selectedMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+      scope:z.enum(['overall','sku','multi','top5']).optional(),
+      seriesMode:z.enum(['top5','top10','all','decliners']).optional(),
+      sku:z.string().max(256).optional()
+    }).strict(),annotations:readAnnotations
+  },query(filters=>getMonthlySales(filters)));
 
   server.registerTool("inventory_status", {
     description: "读取云仓库存同步状态、配置完整性和自动任务状态，不返回密码或密钥。",
@@ -145,7 +162,9 @@ export function createWorkbenchMcpServer({version,dispatch,onClose}){
     if(response?.ok===false)throw Object.assign(Error(response.error||'工作台操作失败'),{code:response.code});
     return response;
   };
-  const server=createInventoryMcpServer({version,onClose,
+  const server=createInventoryMcpServer({name:'wucheng-ecommerce-erp-v2',version,onClose,
+    getInventory:async()=>(await run({command:'inventory'})).inventory,
+    getMonthlySales:async filters=>(await run({command:'sales',filters})).sales,
     getStatus:async()=>(await run({command:'status'})).status,
     getLogs:async limit=>(await run({command:'logs',limit})).lines||[],
     getDiagnostics:async()=>(await run({command:'doctor'})).diagnostics,

@@ -27,10 +27,10 @@ export function createRuntimeCapabilities({ version, packaged, executable, works
       { id: "source", entry: "npm.cmd run desktop", purpose: "开发、调试与修复源码" },
       { id: "cli", entry: "CainiaoWarehouse.exe --cli <command>", purpose: "脚本和 CI 的稳定 JSON 接口" },
       { id: "mcp-stdio", entry: "CainiaoWarehouse.exe --mcp-stdio", purpose: "AI 客户端标准调用" },
-      { id: "portable", entry: "CloudWarehouseInventorySync-Portable-<version>-x64.exe", purpose: "无需安装的便携运行" },
+      { id: "local-web", entry: "CainiaoWarehouse.exe --web", purpose: "本机浏览器与桌面共用后台和数据" },
       { id: "installed", entry: "CainiaoWarehouse.exe", purpose: "带设置界面和在线升级的桌面运行" }
     ],
-    cliCommands: ["status", "capabilities", "doctor", "logs", "debug-logs", "debug-bundle", "extensions", "extension-trust", "extension-call", "sync", "send-latest-valid", "login"],
+    cliCommands: ["status", "inventory", "sales", "capabilities", "doctor", "logs", "debug-logs", "debug-bundle", "extensions", "extension-trust", "extension-call", "sync", "send-latest-valid", "login"],
     mcpTools: [...AI_TOOLS],
     debug: {
       bundleFormat: "cainiao-debug-bundle/v1",

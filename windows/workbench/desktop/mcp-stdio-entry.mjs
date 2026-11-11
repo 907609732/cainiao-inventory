@@ -73,6 +73,8 @@ if(process.env.WORKBENCH_MCP_BROKER==='1'){
   serveWorkbenchMcp({version,dispatch,onClose:()=>process.exit(0)});
 }else serveInventoryMcp({
   version,
+  getInventory:async()=>{const response=await invokeCli(['inventory']);if(response.ok===false)throw Error(response.error||'库存查询失败');return response.inventory;},
+  getMonthlySales:async filters=>{const flags={year:'year',selectedMonth:'month',scope:'scope',seriesMode:'series-mode',sku:'sku'};const response=await invokeCli(['sales',...Object.entries(filters).map(([key,value])=>`--${flags[key]}=${value}`)]);if(response.ok===false)throw Error(response.error||'月销量查询失败');return response.sales;},
   getStatus: async () => (await invokeCli(["status"])).status,
   getLogs: async (limit) => (await invokeCli(["logs", `--limit=${limit}`])).lines || [],
   getDiagnostics: async () => (await invokeCli(["doctor"])).diagnostics,
