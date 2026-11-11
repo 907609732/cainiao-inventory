@@ -71,6 +71,20 @@ jobs:
             $spec.previousSha256='ef82cbeb11fa29a036093579b9b4355a5f9b3f27e4c0cc9bfef7e37d38b41bc6'
             $spec.previousVersion='0.9.7'
           }
+          if($env:LEGACY_FIXTURE_TAG){
+            $expected=@(1..13 | ForEach-Object {'legacy-workbench.7z.'+$_.ToString('000')})
+            if($env:CANDIDATE_SHA256){$expected+=$file}
+            $ready=$false
+            for($attempt=0;$attempt -lt 60;$attempt++){
+              $metadata=gh release view $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --json assets 2>$null
+              if($LASTEXITCODE -eq 0){
+                $names=@(($metadata | ConvertFrom-Json).assets | Where-Object state -eq 'uploaded' | Select-Object -ExpandProperty name)
+                if(@($expected | Where-Object {$_ -notin $names}).Count -eq 0){$ready=$true;break}
+              }
+              Start-Sleep -Seconds 10
+            }
+            if(!$ready){throw 'Restricted installer fixture upload did not finish within ten minutes'}
+          }
           if($env:CANDIDATE_SHA256){
             if(!$env:LEGACY_FIXTURE_TAG -or $env:CANDIDATE_SHA256 -notmatch '^[a-fA-F0-9]{64}$'){throw 'Exact candidate requires fixture tag and SHA-256'}
             New-Item -ItemType Directory C:\ExactCandidate -Force | Out-Null
