@@ -5,12 +5,21 @@ on:
     branches: [codex/local-web-desktop]
     paths: ['windows/workbench/**', '.github/workflows/web-installer.yml']
   workflow_dispatch:
+    inputs:
+      legacy_fixture_tag:
+        description: Optional restricted draft fixture tag for the authentic 0.11.4 installer
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   install:
+    # GitHub requires contents:write to read draft release assets. This job
+    # only downloads the fixture; it never publishes or edits a release.
+    permissions:
+      contents: write
     runs-on: windows-latest
     timeout-minutes: 25
     strategy:
@@ -43,6 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SCENARIO: ${{ matrix.scenario }}
+          LEGACY_FIXTURE_TAG: ${{ inputs.legacy_fixture_tag }}
         run: |
           New-Item -ItemType Directory C:\Input,C:\WorkbenchInput,C:\Kit,C:\Results -Force | Out-Null
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
@@ -58,8 +68,15 @@ jobs:
           }
           $spec | ConvertTo-Json | Set-Content C:\Kit\candidate.json
           try {
-            Invoke-WebRequest 'https://github.com/907609732/wucheng-ecommerce-erp-v2/releases/download/0.11.4/CloudWarehouseInventorySync-Setup-0.11.4-x64.exe' -OutFile C:\WorkbenchInput\CloudWarehouseInventorySync-Setup-0.11.4-x64.exe
+            if($env:LEGACY_FIXTURE_TAG){
+              if($env:LEGACY_FIXTURE_TAG -notmatch '^coexistence-fixture-[a-zA-Z0-9-]+$'){throw 'Invalid fixture tag'}
+              gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern CloudWarehouseInventorySync-Setup-0.11.4-x64.exe --dir C:\WorkbenchInput
+              if($LASTEXITCODE -ne 0){throw 'Restricted legacy fixture download failed'}
+            }else{
+              Invoke-WebRequest 'https://github.com/907609732/wucheng-ecommerce-erp-v2/releases/download/0.11.4/CloudWarehouseInventorySync-Setup-0.11.4-x64.exe' -OutFile C:\WorkbenchInput\CloudWarehouseInventorySync-Setup-0.11.4-x64.exe
+            }
           } catch {
+            if($env:LEGACY_FIXTURE_TAG){throw 'Explicit legacy fixture unavailable; full coexistence acceptance cannot continue'}
             'available=false' >> $env:GITHUB_OUTPUT
             @{skipped=$true;reason='Legacy authentic workbench release asset unavailable; verify coexistence in local Windows Sandbox with hash-verified retained installer'} | ConvertTo-Json | Set-Content C:\Results\legacy-baseline-unavailable.json
             'Legacy coexistence installation SKIPPED: public 0.11.4 installer asset unavailable. Packaged web/runtime checks above are independent; see local Sandbox evidence for installation.' >> $env:GITHUB_STEP_SUMMARY
