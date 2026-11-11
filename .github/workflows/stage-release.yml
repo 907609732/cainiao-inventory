@@ -1,0 +1,40 @@
+name: Stage verified release artifacts
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful installer acceptance run
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: write
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify run and stage exact artifacts into existing draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$REPO/actions/runs/$RUN_ID" > run.json
+          jq -e '.conclusion == "success" and .name == "Packaged web and installer acceptance"' run.json
+          gh run download "$RUN_ID" --repo "$REPO" --name release-windows-x64 --dir release
+          gh run download "$RUN_ID" --repo "$REPO" --name local-web-install-fresh --dir fresh
+          gh run download "$RUN_ID" --repo "$REPO" --name local-web-install-upgrade --dir upgrade
+          jq -e '.ok == true' fresh/result.json
+          jq -e '.ok == true' upgrade/result.json
+          version=$(sed -n 's/^version: //p' release/latest.yml | tr -d '\r')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          file="CainiaoWarehouse-Setup-$version-x64.exe"
+          expected=$(sed -n 's/^sha512: //p' release/latest.yml | tr -d '\r')
+          actual=$(openssl dgst -sha512 -binary "release/$file" | openssl base64 -A)
+          test "$expected" = "$actual"
+          gh release view "v$version" --repo "$REPO" --json isDraft --jq .isDraft | grep -qx true
+          gh release upload "v$version" "release/$file" "release/$file.blockmap" release/latest.yml --repo "$REPO" --clobber
+          sha256sum "release/$file"
