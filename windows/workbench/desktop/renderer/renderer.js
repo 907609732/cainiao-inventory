@@ -754,7 +754,13 @@ async function refreshLocalAccess() {
     row.append(label,revoke); byId('aiCredentialList').append(row);
   }
 }
-byId('openLocalWeb').addEventListener('click',async()=>{try {await api.openWeb();} catch(error) {byId('localAccessMessage').textContent=error.message;}});
+byId('openWebHeader').classList.toggle('hidden', managedWarehouse || location.protocol !== 'file:');
+for (const id of ['openLocalWeb', 'openWebHeader']) byId(id).addEventListener('click',async()=>{
+  const button=byId(id); button.disabled=true;
+  try {await api.openWeb();}
+  catch(error) {byId('localAccessMessage').textContent=error.message; appendLog({line:`打开网页版失败：${error.message}`});}
+  finally {button.disabled=false;}
+});
 byId('createAiCredential').addEventListener('click',async()=>{
   const button=byId('createAiCredential'); button.disabled=true; byId('aiCredentialToken').value='';
   try { const result=await api.createAiCredential({write:byId('aiWriteEnabled').checked,confirmed:true}); await refreshLocalAccess(); byId('aiCredentialToken').value=result.token; byId('localAccessMessage').textContent='凭据仅显示这一次；切换页面或关闭窗口后会清空。'; }

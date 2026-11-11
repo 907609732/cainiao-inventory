@@ -137,6 +137,15 @@ jobs:
           $report | ConvertTo-Json -Depth 8
           if(!$report.ok){throw 'Cloud-only installer acceptance failed'}
       - uses: actions/upload-artifact@v4
+        if: success() && matrix.scenario == 'fresh'
+        with:
+          name: release-windows-x64
+          path: |
+            windows/workbench/dist/*.exe
+            windows/workbench/dist/*.blockmap
+            windows/workbench/dist/latest.yml
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: local-web-install-${{ matrix.scenario }}

@@ -31,6 +31,11 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.waitForFunction(() => !!window.inventoryApp);
   await page.waitForLoadState('domcontentloaded');
+  if (!managed) {
+    await app.evaluate(({shell}) => { globalThis.openedWebUrl=''; shell.openExternal=async url=>{globalThis.openedWebUrl=url;}; });
+    await page.locator('#openWebHeader').click();
+    assert.match(await app.evaluate(()=>globalThis.openedWebUrl), /^http:\/\/127\.0\.0\.1:\d+\//);
+  }
   assert.equal(await page.title(), managed ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓');
   assert.equal(await app.evaluate(({app}) => app.getPath('userData')), profile);
   assert.equal(await app.evaluate(() => process.env.LINGTU_REGISTRY_PATH), managed ? path.join(profile, 'registry.json') : path.join(profile, 'integrations', 'registry.json'));
