@@ -179,3 +179,9 @@ legend { padding: 0 8px; font-weight: 700; color: var(--lt-ink); }
 .date-exception-dialog { width: min(600px,calc(100vw - 48px)); border: 1px solid var(--lt-line); border-radius: var(--lt-radius-panel); padding:24px; color:var(--lt-ink); background:var(--lt-surface); }
 .date-exception-dialog::backdrop { background:#0006; }
 .date-exception-summary { white-space:pre-wrap; font-weight:600; line-height:1.9; }
+
+.local-web-status { position: sticky; top: 0; z-index: 10000; padding: 12px 20px; background: #fff2cf; color: #703e00; border-bottom: 1px solid #e4bd66; }
+.secret-clear { display: flex; gap: 6px; align-items: center; font-size: 12px; margin-top: 6px; }
+.secret-clear input { width: auto; }
+#localAccessCard > label { display: block; margin: 12px 0; }
+#localServiceOrigin, #aiCredentialToken { width: 100%; }

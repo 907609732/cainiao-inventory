@@ -60,9 +60,12 @@ function hideAllSecrets() {
   for (const fieldId of editableSecretFields) setSecretVisible(fieldId, false);
 }
 
+const clearSecretKeys = new Set();
 function hydrateSecrets(secrets = {}) {
   for (const fieldId of editableSecretFields) byId(fieldId).value = String(secrets[fieldId] || "");
   hideAllSecrets();
+  clearSecretKeys.clear();
+  document.querySelectorAll("[data-clear-secret]").forEach(input => { input.checked = false; });
 }
 
 function hydrateIntegration(integration) {
@@ -478,6 +481,9 @@ function hydrateSettings(settings) {
   byId("dingtalkClientSecret").placeholder = settings.secretFlags.dingtalkClientSecret ? "Client Secret 已加密保存" : "请输入 Client Secret";
   byId("dingtalkWebhook").placeholder = settings.secretFlags.dingtalkWebhook ? "Webhook 已加密保存" : "请输入 Webhook";
   byId("dingtalkWebhookSecret").placeholder = settings.secretFlags.dingtalkWebhookSecret ? "加签密钥已加密保存" : "可选";
+  for (const id of editableSecretFields) {
+    byId(id).placeholder = settings.secretFlags?.[id] ? "已配置；留空保留，输入可替换" : "尚未配置";
+  }
   byId("loginState").textContent = settings.runtimeMode === "client" ? "正在检测远程服务" : (hasAccount(settings) ? "凭据已保存" : "待配置");
   setConfigState("accountConfigState", hasAccount(settings));
   setConfigState("robotConfigState", hasRobot(settings));
@@ -495,7 +501,8 @@ function showSaveResult(id, message, error = false) {
 async function saveSection(section, settings, secrets, messageId) {
   showSaveResult(messageId, "正在保存…");
   try {
-    const saved = await api.saveSettingsSection({ section, settings, secrets });
+    const clearSecrets = [...clearSecretKeys].filter(key => Object.hasOwn(secrets, key));
+    const saved = await api.saveSettingsSection({ section, settings, secrets: Object.fromEntries(Object.entries(secrets).filter(([,value]) => value !== "")), clearSecrets });
     hydrateSettings(saved);
     hydrateSecrets(await api.getEditableSecrets());
     try { applyState(await api.getState()); }
@@ -539,6 +546,7 @@ async function refreshSettings() {
 }
 
 function navigateView(view) {
+  if (byId('aiCredentialToken')) byId('aiCredentialToken').value = '';
   const titles = { dashboard: '云仓同步', inventory: '云仓同步', sales: '云仓同步', settings: '云仓设置' };
   if (!titles[view]) return;
   document.querySelectorAll('.view-tab').forEach(item => item.classList.toggle('active', item.dataset.view === view));
@@ -731,3 +739,32 @@ window.addEventListener("resize", () => {
 // A failed initialization must never reveal a second launcher homepage.
 navigateView('dashboard');
 load().catch((error) => appendLog({ line: `初始化失败：${error.message}` })).finally(() => byId("warehouseLoading")?.remove());
+
+// Credential management is available only through the authenticated local UI.
+async function refreshLocalAccess() {
+  if (managedWarehouse || !api.getLocalAccess) { byId('localAccessCard').classList.add('hidden'); return; }
+  const access = await api.getLocalAccess();
+  byId('localServiceOrigin').value = access.origin || '';
+  byId('aiCredentialList').replaceChildren();
+  for (const credential of access.credentials || []) {
+    const row = document.createElement('p');
+    const label = document.createElement('span'); label.textContent = `${credential.id} · ${credential.write ? '允许写入' : '只读'} `;
+    const revoke = document.createElement('button'); revoke.type = 'button'; revoke.className = 'btn'; revoke.textContent = '撤销';
+    revoke.addEventListener('click', async () => { try { await api.revokeAiCredential({id:credential.id,confirmed:true}); byId('aiCredentialToken').value = ''; await refreshLocalAccess(); } catch(error) { byId('localAccessMessage').textContent = error.message; } });
+    row.append(label,revoke); byId('aiCredentialList').append(row);
+  }
+}
+byId('openLocalWeb').addEventListener('click',async()=>{try {await api.openWeb();} catch(error) {byId('localAccessMessage').textContent=error.message;}});
+byId('createAiCredential').addEventListener('click',async()=>{
+  const button=byId('createAiCredential'); button.disabled=true; byId('aiCredentialToken').value='';
+  try { const result=await api.createAiCredential({write:byId('aiWriteEnabled').checked,confirmed:true}); await refreshLocalAccess(); byId('aiCredentialToken').value=result.token; byId('localAccessMessage').textContent='凭据仅显示这一次；切换页面或关闭窗口后会清空。'; }
+  catch(error) {byId('localAccessMessage').textContent=error.message;} finally {button.disabled=false;}
+});
+window.addEventListener('pagehide',()=>{byId('aiCredentialToken').value='';});
+for (const id of editableSecretFields) {
+  const input=byId(id), label=document.createElement('label'), clear=document.createElement('input');
+  clear.type='checkbox'; clear.dataset.clearSecret=id;
+  clear.addEventListener('change',()=>{if(clear.checked){clearSecretKeys.add(id);input.value='';}else clearSecretKeys.delete(id);});
+  label.className='secret-clear'; label.append(clear,document.createTextNode('清除此项已保存内容')); input.closest('.secret-field')?.append(label);
+}
+refreshLocalAccess().catch(error=>{byId('localAccessMessage').textContent=error.message;});

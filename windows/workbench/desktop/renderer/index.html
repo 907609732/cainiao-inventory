@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'">
   <title>菜鸟云仓</title>
   <link rel="icon" type="image/png" href="../assets/lingtu-icon.png">
   <link rel="stylesheet" href="../../node_modules/gridjs/dist/theme/mermaid.min.css">
@@ -282,6 +282,16 @@
         <p class="field-help">同一核心支持源码、CLI、MCP、便携版和安装版；AI 可导出脱敏 Debug Bundle。扩展代码必须由用户显式信任，写入型 action 仍需二次确认。</p>
       </section>
 
+      <section class="settings-card" id="localAccessCard">
+        <div class="settings-card-heading"><div><h3>本机网页与 AI 接入</h3><p>网页与应用共用本机后台。AI 凭据仅在生成时显示一次，请自行保存。</p></div></div>
+        <label>本机服务地址<input id="localServiceOrigin" readonly></label>
+        <div class="settings-actions"><button class="btn" id="openLocalWeb" type="button">打开网页版</button></div>
+        <label><input id="aiWriteEnabled" type="checkbox">允许新凭据执行写入操作（默认只读）</label>
+        <div class="settings-actions"><button class="btn" id="createAiCredential" type="button">生成 AI 凭据</button></div>
+        <label>新生成的凭据<input id="aiCredentialToken" readonly autocomplete="off" placeholder="仅在点击生成后显示一次"></label>
+        <div id="aiCredentialList"></div><p id="localAccessMessage" role="status"></p>
+      </section>
+
       <section class="settings-card" id="maintenanceCard">
         <div class="settings-card-heading">
           <div><h3>维护与更新</h3><p>查看登录状态和软件版本，管理本机数据与更新。</p></div>
@@ -319,6 +329,7 @@
     <div class="actions"><button class="btn" id="dateExceptionCancel" type="button">取消，不发送</button><button class="danger btn" id="dateExceptionConfirm" type="button">我已了解风险，确认发送</button></div>
   </dialog>
   <script src="../../node_modules/echarts/dist/echarts.min.js"></script>
+  <script src="web-adapter.js"></script>
   <script src="renderer.js"></script>
   <script type="module" src="../shared/loading-screen-auto.mjs"></script>
 </body>
