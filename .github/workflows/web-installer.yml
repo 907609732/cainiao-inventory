@@ -88,7 +88,7 @@ jobs:
           if($env:CANDIDATE_SHA256){
             if(!$env:LEGACY_FIXTURE_TAG -or $env:CANDIDATE_SHA256 -notmatch '^[a-fA-F0-9]{64}$'){throw 'Exact candidate requires fixture tag and SHA-256'}
             New-Item -ItemType Directory C:\ExactCandidate -Force | Out-Null
-            gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern $file --dir C:\ExactCandidate
+            $transferOutput=gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern $file --dir C:\ExactCandidate 2>&1
             if($LASTEXITCODE -ne 0){throw 'Exact candidate download failed'}
             if((Get-FileHash "C:\ExactCandidate\$file").Hash.ToLowerInvariant() -ne $env:CANDIDATE_SHA256.ToLowerInvariant()){throw 'Exact candidate hash mismatch'}
             Copy-Item -LiteralPath "C:\ExactCandidate\$file" -Destination "C:\Input\$file" -Force
@@ -98,7 +98,7 @@ jobs:
           try {
             if($env:LEGACY_FIXTURE_TAG){
               if($env:LEGACY_FIXTURE_TAG -notmatch '^coexistence-fixture-[a-zA-Z0-9-]+$'){throw 'Invalid fixture tag'}
-              gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern 'legacy-workbench.7z.*' --dir C:\WorkbenchInput
+              $transferOutput=gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern 'legacy-workbench.7z.*' --dir C:\WorkbenchInput 2>&1
               if($LASTEXITCODE -ne 0){throw 'Restricted legacy fixture download failed'}
               $sevenZip=Get-Command 7z.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1
               if(!$sevenZip){$sevenZip=Get-ChildItem (Join-Path $env:LOCALAPPDATA 'electron-builder/Cache') -Filter 7za.exe -Recurse -File | Select-Object -ExpandProperty FullName -First 1}
