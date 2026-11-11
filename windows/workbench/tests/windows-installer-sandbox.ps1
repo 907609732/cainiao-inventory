@@ -109,6 +109,24 @@ try {
     foreach($link in $hostShortcuts){if(!(Test-Path -LiteralPath $link.path) -or (Get-ShortcutTarget $link.path) -ne $link.target -or (Get-FileHash -LiteralPath $link.path).Hash -ne $link.hash){throw 'Workbench shortcut changed'}}
     $cloudRegistration=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object DisplayName -like '菜鸟云仓*' | Select-Object -First 1
     if(!$cloudRegistration -or $cloudRegistration.PSPath -eq $hostKey){throw 'Cloud uninstall registration is not independent'}
+    if($spec.webEntry){
+      $profile=Join-Path $env:APPDATA 'cainiao-cloud-warehouse'
+      $discoveryFile=Join-Path $profile 'workspace/state/local-web.json'
+      $owner=Get-Content -LiteralPath $discoveryFile -Raw | ConvertFrom-Json
+      $health=Invoke-RestMethod ($owner.origin+'/api/v1/health')
+      if($health.brand -ne 'cainiao-cloud-warehouse' -or $health.instanceId -ne $owner.instanceId){throw 'Installed local web identity mismatch'}
+      $webLinks=@($shortcutRoots | ForEach-Object {Get-ChildItem -LiteralPath $_ -Filter '*（网页版）.lnk' -Recurse -File} | Where-Object {(Get-ShortcutTarget $_.FullName) -eq $cloudExe})
+      if(!$webLinks.Count){throw 'Installed web launch shortcut missing'}
+      $link=$webLinks[0]
+      $folder=$script:shortcutShell.NameSpace($link.DirectoryName)
+      if($folder.ParseName($link.Name).ExtendedProperty('System.Link.Arguments') -ne '--web'){throw 'Web shortcut does not use --web'}
+      Start-Process -FilePath $link.FullName -WindowStyle Hidden
+      Start-Sleep -Seconds 2
+      $sameOwner=Get-Content -LiteralPath $discoveryFile -Raw | ConvertFrom-Json
+      if($sameOwner.pid -ne $owner.pid -or $sameOwner.instanceId -ne $owner.instanceId){throw 'Web entry created another backend'}
+      $report.webShortcutVerified=$true
+      $report.webAndDesktopShareBackend=$true
+    }
     $hostProcess=Open-CheckedApp $hostExe '五成电子商务工作台' 90
     $cloudProcess.Refresh()
     if($cloudProcess.HasExited -or !$cloudProcess.Responding){throw 'Cloud stopped responding while workbench was opened'}
