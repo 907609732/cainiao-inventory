@@ -84,8 +84,13 @@ jobs:
           try {
             if($env:LEGACY_FIXTURE_TAG){
               if($env:LEGACY_FIXTURE_TAG -notmatch '^coexistence-fixture-[a-zA-Z0-9-]+$'){throw 'Invalid fixture tag'}
-              gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern CloudWarehouseInventorySync-Setup-0.11.4-x64.exe --dir C:\WorkbenchInput
+              gh release download $env:LEGACY_FIXTURE_TAG --repo $env:GITHUB_REPOSITORY --pattern 'legacy-workbench.7z.*' --dir C:\WorkbenchInput
               if($LASTEXITCODE -ne 0){throw 'Restricted legacy fixture download failed'}
+              $sevenZip=Get-Command 7z.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1
+              if(!$sevenZip){$sevenZip=Get-ChildItem (Join-Path $env:LOCALAPPDATA 'electron-builder/Cache') -Filter 7za.exe -Recurse -File | Select-Object -ExpandProperty FullName -First 1}
+              if(!$sevenZip){throw 'Existing 7-Zip tool not found'}
+              & $sevenZip x 'C:\WorkbenchInput\legacy-workbench.7z.001' '-oC:\WorkbenchInput' '-y'
+              if($LASTEXITCODE -ne 0){throw 'Restricted legacy fixture extraction failed'}
             }else{
               Invoke-WebRequest 'https://github.com/907609732/wucheng-ecommerce-erp-v2/releases/download/0.11.4/CloudWarehouseInventorySync-Setup-0.11.4-x64.exe' -OutFile C:\WorkbenchInput\CloudWarehouseInventorySync-Setup-0.11.4-x64.exe
             }
