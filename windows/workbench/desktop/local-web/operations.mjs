@@ -2,7 +2,12 @@ const queries = ['getSettings','getInventory','getMonthlySales','getState','getL
 const writes = ['checkForUpdates','saveSettings','saveSettingsSection','runNow','refreshLogin','stopTask','syncMonthlySales','backfillMonthlySales','sendDateException','openLogs','openData','openRepository','openWebsite','openReleaseNotes','createAiCredential','revokeAiCredential','openWeb'];
 const ai = new Set(['getInventory','getMonthlySales','getState','getLogs','getBranding','getAbout','runNow','refreshLogin','stopTask','syncMonthlySales','backfillMonthlySales','previewDateException','sendDateException']);
 const tasks = new Set(['runNow','refreshLogin','syncMonthlySales','backfillMonthlySales','sendDateException','executeCli']);
+const cliQueries = new Set(['inventory','sales','status','capabilities','doctor','logs','debug-logs','extensions']);
 export const OPERATIONS = Object.freeze(Object.fromEntries([...queries,...writes,'previewDateException','getEditableSecrets','installUpdate','executeCli'].map(name=>[name,Object.freeze({write:writes.includes(name)||name==='executeCli'||name==='installUpdate',ai:ai.has(name),ownerOnly:name==='executeCli',task:tasks.has(name)})])));
+export function operationPolicy(name,payload){
+ const policy=OPERATIONS[name];
+ return name==='executeCli'&&cliQueries.has(payload?.request?.command)?{...policy,write:false,task:false}:policy;
+}
 
 const confirmation={confirmed:'boolean',confirmSend:'boolean',confirmSideEffect:'boolean'};
 const fields={

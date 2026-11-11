@@ -44,13 +44,36 @@ test('durable receipts survive restart and date previews belong to one identity'
  const call=async(op,payload,key,identity='one')=>fetch(origin+'/api/v1/call/'+op,{method:'POST',headers:{authorization:'Bearer '+identity,'content-type':'application/json',...(key?{'idempotency-key':key}:{})},body:JSON.stringify(payload)});
  assert.equal((await call('previewDateException',{})).status,200);
  assert.equal((await call('sendDateException',{token:'preview',confirmed:true},'date','two')).status,403);
- const started=await (await call('runNow',{confirmed:true},'durable')).json();
+ const started=await (await call('sendDateException',{token:'preview',confirmed:true},'durable')).json();
  await new Promise(resolve=>setTimeout(resolve,50));await server.stop();
  server=createLocalWebServer(options);origin=await server.start();
- assert.deepEqual(await (await call('runNow',{confirmed:true},'durable')).json(),started);assert.equal(calls,1);
+ assert.deepEqual(await (await call('sendDateException',{token:'preview',confirmed:true},'durable')).json(),started);assert.equal(calls,1);
+ assert.equal((await call('sendDateException',{token:'preview',confirmed:true},'new-request')).status,403);
  const task=await (await fetch(origin+'/api/v1/tasks/'+started.value.taskId,{headers:{authorization:'Bearer one'}})).json();
  assert.equal(task.value.status,'succeeded');
  assert.equal((await fetch(origin+'/api/v1/tasks/'+started.value.taskId,{headers:{authorization:'Bearer two'}})).status,404);
+});
+
+test('owner CLI queries return directly without storing result snapshots',async t=>{
+ const dir=await mkdtemp(join(tmpdir(),'warehouse-query-'));
+ const server=createLocalWebServer({version:'test',port:0,stateDir:dir,ownerToken:'owner',dispatch:async()=>({inventory:'PRIVATE_QUERY_RESULT'})});
+ const origin=await server.start();t.after(async()=>{await server.stop();await rm(dir,{recursive:true,force:true});});
+ for(const command of ['inventory','sales','status','capabilities','doctor','logs','debug-logs','extensions']){
+  const result=await fetch(origin+'/api/v1/call/executeCli',{method:'POST',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({request:{command}})});
+  assert.equal(result.status,200);assert.equal((await result.json()).value.inventory,'PRIVATE_QUERY_RESULT');
+ }
+ assert.deepEqual(await readdir(join(dir,'local-web-tasks')),[]);
+});
+
+test('business failure DTOs produce failed task receipts',async t=>{
+ const dir=await mkdtemp(join(tmpdir(),'warehouse-failure-'));
+ const server=createLocalWebServer({version:'test',port:0,stateDir:dir,ownerToken:'owner',dispatch:async(op,payload)=>payload.request.result});
+ const origin=await server.start();t.after(async()=>{await server.stop();await rm(dir,{recursive:true,force:true});});
+ for(const [index,result] of [{success:false},{ok:false}].entries()){
+  const start=await (await fetch(origin+'/api/v1/call/executeCli',{method:'POST',headers:{authorization:'Bearer owner','content-type':'application/json','idempotency-key':'failure-'+index},body:JSON.stringify({request:{command:'sync',result}})})).json();
+  let task;for(let attempt=0;attempt<50;attempt++){task=await (await fetch(origin+'/api/v1/tasks/'+start.value.taskId,{headers:{authorization:'Bearer owner'}})).json();if(task.value.status!=='running')break;await new Promise(resolve=>setTimeout(resolve,10));}
+  assert.equal(task.value.status,'failed');assert.equal(task.value.error.code,'TASK_FAILED');
+ }
 });
 
 test('one-time AI credentials never enter durable receipt files',async t=>{

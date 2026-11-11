@@ -4,7 +4,7 @@ import staticPlugin from '@fastify/static';
 import {randomBytes,createHash,timingSafeEqual} from 'node:crypto';
 import {mkdir,readdir,readFile,writeFile,rename} from 'node:fs/promises';
 import {dirname,basename,join,isAbsolute} from 'node:path';
-import {OPERATIONS,validOperationPayload} from './operations.mjs';
+import {operationPolicy,validOperationPayload} from './operations.mjs';
 
 const random=()=>randomBytes(32).toString('base64url');
 const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
@@ -42,7 +42,7 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
  app.get('/api/v1/events',async req=>{await authenticate(req);const after=Number(req.query.after||0);if(!Number.isSafeInteger(after)||after<0)throw fail(400,'INVALID_CURSOR');return {cursor,events:events.filter(e=>e.cursor>after)};});
  app.get('/api/v1/tasks/:id',async req=>{const ctx=await authenticate(req);const receipt=receipts.get(req.params.id);if(!receipt||receipt.identity!==ctx.kind+':'+ctx.id)throw fail(404,'NOT_FOUND');return {ok:true,value:{taskId:receipt.taskId,status:receipt.status,...(receipt.status==='succeeded'?{value:receipt.value}:{}),...(receipt.status==='failed'?{error:{code:'TASK_FAILED',message:'Task failed'}}:{})}};});
  app.post('/api/v1/call/:operation',async(req,reply)=>{
-  const ctx=await authenticate(req),name=req.params.operation,op=OPERATIONS[name],payload=req.body??{};
+  const ctx=await authenticate(req),name=req.params.operation,payload=req.body??{},op=operationPolicy(name,payload);
   if(!op)throw fail(404,'UNKNOWN_OPERATION');
   if(!payload||typeof payload!=='object'||Array.isArray(payload))throw fail(400,'INVALID_PAYLOAD');
   if(!validOperationPayload(name,payload))throw fail(400,'INVALID_PAYLOAD');
@@ -50,17 +50,17 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   if(op.write){if(!ctx.write)throw fail(403,'READ_ONLY');if(ctx.kind==='browser'&&!equal(req.headers['x-csrf-token'],ctx.csrf))throw fail(403,'CSRF_REQUIRED');if(ctx.kind==='ai'&&payload.confirmed!==true&&payload.confirmSend!==true&&payload.confirmSideEffect!==true)throw fail(403,'CONFIRMATION_REQUIRED');}
   if(name==='getEditableSecrets')return {ok:true,value:{}};
   const context={kind:ctx.kind,id:ctx.id,write:ctx.write};
-  if(name==='sendDateException'){
-   const token=payload.token||payload.confirmationToken;const preview=previews.get(token);if(!preview||preview.identity!==ctx.kind+':'+ctx.id||preview.expires<Date.now())throw fail(403,'INVALID_PREVIEW');
-  }
   const invoke=async()=>{const value=await dispatch(name,payload,context);if(name==='previewDateException'){const token=value?.token||value?.confirmationToken;if(token)previews.set(token,{identity:ctx.kind+':'+ctx.id,expires:Date.now()+120000});}return value;};
   if(!op.write)return {ok:true,value:await invoke()};
   const key=req.headers['idempotency-key'];if(typeof key!=='string'||!key.length||key.length>128)throw fail(400,'IDEMPOTENCY_REQUIRED');
   const identity=ctx.kind+':'+ctx.id,fingerprint=createHash('sha256').update(stable({name,payload})).digest('hex');
   const taskId=createHash('sha256').update(identity+'\0'+key).digest('hex');const prior=receipts.get(taskId);
   if(prior){if(prior.fingerprint!==fingerprint)throw fail(409,'IDEMPOTENCY_CONFLICT');return prior.response||{ok:true,value:{taskId,status:prior.status}};}
+  if(name==='sendDateException'){
+   const token=payload.token||payload.confirmationToken;const preview=previews.get(token);if(!preview||preview.identity!==identity||preview.expires<Date.now())throw fail(403,'INVALID_PREVIEW');
+  }
   const receipt={taskId,identity,fingerprint,status:'running',sensitive:name==='createAiCredential'};receipts.set(taskId,receipt);await persist(receipt);
-  const finish=async()=>{try{receipt.value=await invoke();receipt.status='succeeded';if(!op.task)receipt.response={ok:true,value:receipt.value};}catch{receipt.status='failed';if(!op.task)receipt.response={ok:false,error:{code:'TASK_FAILED',message:'Task failed'}};}await persist(receipt);};
+  const finish=async()=>{try{receipt.value=await invoke();if(receipt.value?.success===false||receipt.value?.ok===false)throw Error('Business task failed');receipt.status='succeeded';if(!op.task)receipt.response={ok:true,value:receipt.value};}catch{receipt.status='failed';if(!op.task)receipt.response={ok:false,error:{code:'TASK_FAILED',message:'Task failed'}};}await persist(receipt);};
   if(op.task){receipt.response={ok:true,value:{taskId,status:'running'}};await persist(receipt);void finish().catch(()=>{receipt.status='unknown';});return receipt.response;}
   await finish();return receipt.response;
  });
