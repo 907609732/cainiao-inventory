@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const source = await readFile(new URL('../desktop/renderer/web-adapter.js',import.meta.url),'utf8');
-function fixture({hash='',existing,fail=false,events=[]}={}){
+function fixture({hash='',existing,fail=false,events=[],taskStatuses}={}){
  const calls=[],timers=[],banners=[];let counter=0;
  const window={inventoryApp:existing,location:{hash,pathname:'/renderer/index.html',search:''},history:{replaceState(...args){calls.push(['history',...args]);}},crypto:{randomUUID:()=>`request-${++counter}`},addEventListener(){}};
  const document={readyState:'complete',getElementById:()=>null,createElement:()=>({setAttribute(){},textContent:'',hidden:false}),body:{prepend(el){banners.push(el);}},addEventListener(){}};
- const fetch=async(url,options={})=>{calls.push([url,options]);if(fail)throw Error('offline');return {ok:true,json:async()=>url.includes('/session')?{csrf:'csrf-test'}:url.includes('/events')?{cursor:7,events}:{ok:true,value:{operation:url}}};};
+ const fetch=async(url,options={})=>{calls.push([url,options]);if(fail)throw Error('offline');if(taskStatuses && (url.endsWith('/sendDateException') || url.includes('/tasks/'))) return {ok:true,json:async()=>({ok:true,value:url.includes('/tasks/')?taskStatuses.shift():{taskId:'receipt-1',status:'running'}})};return {ok:true,json:async()=>url.includes('/session')?{csrf:'csrf-test'}:url.includes('/events')?{cursor:7,events}:{ok:true,value:{operation:url}}};};
  vm.runInNewContext(source,{window,document,location:window.location,history:window.history,crypto:window.crypto,URLSearchParams,fetch,setTimeout:fn=>timers.push(fn),clearTimeout(){},console});
  return {window,calls,timers,banners};
 }
@@ -37,4 +37,17 @@ test('the same renderer supplies all four browser views and loads adapter first'
  for(const view of ['dashboard','inventory','sales','settings']) assert.ok(html.includes(`data-view-panel="${view}"`));
  assert.ok(html.indexOf('src="web-adapter.js"')<html.indexOf('src="renderer.js"'));
  assert.ok(html.includes("connect-src 'self'"));
+});
+
+for (const outcome of ['succeeded','failed','unknown']) test(`task receipt ${outcome} is observed without repeating the write`,async()=>{
+ const statuses=[{taskId:'receipt-1',status:'running'},{taskId:'receipt-1',status:outcome,value:{accepted:true},error:{code:'TASK_FAILED',message:'delivery rejected'}}];
+ const f=fixture({taskStatuses:statuses});
+ const pending=f.window.inventoryApp.sendDateException({token:'confirmation',confirmed:true});
+ const result=pending.then(value=>({value}),error=>({error}));
+ for(let i=0;i<6 && statuses.length;i++){await new Promise(r=>setImmediate(r));f.timers.splice(0).forEach(fn=>fn());}
+ const resolved=await result;
+ if(outcome==='succeeded') assert.equal(resolved.value.accepted,true);
+ else assert.match(resolved.error.message,outcome==='failed'?/delivery rejected/:/receipt-1/);
+ assert.equal(f.calls.filter(c=>String(c[0]).endsWith('/sendDateException')).length,1);
+ assert.equal(f.calls.filter(c=>String(c[0]).includes('/tasks/')).length,2);
 });

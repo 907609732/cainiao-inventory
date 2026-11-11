@@ -27,6 +27,23 @@
   // Startup failures are also observed here when a page has not called an API yet.
   session.catch(() => {});
   const writes = new Set(['saveSettings','saveSettingsSection','loginRemoteServer','testRemoteServer','runNow','refreshLogin','stopTask','sendDateException','syncMonthlySales','backfillMonthlySales','openLogs','openData','openRepository','openWebsite','openReleaseNotes','checkForUpdates','installUpdate','createAiCredential','revokeAiCredential','openWeb']);
+  async function awaitTask(receipt) {
+    const taskId = receipt.taskId;
+    // Only the read-only receipt is polled. A lost connection never repeats the action.
+    for (let attempt = 0; attempt < 1200; attempt++) {
+      if (receipt.status === 'succeeded') return receipt.value;
+      if (receipt.status === 'failed') {
+        const error = new Error((receipt.error?.message || '任务执行失败') + '（任务 ' + taskId + '）');
+        error.code = receipt.error?.code; error.taskId = taskId; throw error;
+      }
+      if (receipt.status !== 'running') throw new Error('任务 ' + taskId + ' 的结果未知，请在应用中核对状态；不要重复提交。');
+      if (attempt) await new Promise(resolve => setTimeout(resolve, 1000));
+      try { receipt = (await request('/api/v1/tasks/' + encodeURIComponent(taskId), {method:'GET'})).value; }
+      catch (error) { throw new Error('无法查询任务 ' + taskId + '：' + error.message + '。请在应用中核对结果；不要重复提交。'); }
+      if (!receipt || receipt.taskId !== taskId) throw new Error('任务 ' + taskId + ' 的回执无效，请在应用中核对；不要重复提交。');
+    }
+    throw new Error('等待任务 ' + taskId + ' 超过 20 分钟，请在应用中核对结果；任务不会自动重启。');
+  }
   async function call(operation, payload) {
     const key = writes.has(operation) ? window.crypto.randomUUID() : null;
     await session;
@@ -35,8 +52,11 @@
     if (writes.has(operation)) data = {...data,confirmed:true};
     const headers = {'Content-Type':'application/json','x-csrf-token':csrf};
     if (key) headers['Idempotency-Key'] = key;
-    try { return (await request('/api/v1/call/' + operation,{method:'POST',headers,body:JSON.stringify(data)})).value; }
-    catch (error) { status('本机请求未完成：' + error.message + '。请检查后台后手动重试；同步和发送不会自动重复。'); throw error; }
+    try {
+      const value = (await request('/api/v1/call/' + operation,{method:'POST',headers,body:JSON.stringify(data)})).value;
+      return value?.taskId && value?.status ? await awaitTask(value) : value;
+    }
+    catch (error) { status('本机请求未完成：' + error.message + '。请检查后台并核对任务结果；同步和发送不会自动重复。'); throw error; }
   }
   const api = {isLocalWeb:true,getEditableSecrets:async()=>({})};
   for (const method of ['getBranding','getSettings','getAbout','saveSettings','saveSettingsSection','loginRemoteServer','testRemoteServer','runNow','refreshLogin','stopTask','getState','getLogs','previewDateException','sendDateException','getInventory','getMonthlySales','syncMonthlySales','backfillMonthlySales','openLogs','openData','openRepository','openWebsite','openReleaseNotes','getIntegration','getUpdateState','checkForUpdates','installUpdate','getLocalAccess','createAiCredential','revokeAiCredential','openWeb']) api[method] = payload => call(method,payload);
