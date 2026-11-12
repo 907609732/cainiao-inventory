@@ -1,5 +1,5 @@
 appname=cainiao-warehouse
-version=0.10.4
+version=0.10.5
 display_name=菜鸟云仓
 desc=独立云仓库存与月销量服务，私有浏览器登录及受控 ERP API
 source=thirdparty
