@@ -20,6 +20,17 @@
     if(actions&&!document.querySelector('#nasBrowserEntry')){
       const link=document.createElement('a');link.id='nasBrowserEntry';link.className='btn';
       link.href='/browser/';link.target='_blank';link.rel='noopener noreferrer';
+      link.addEventListener('click',async event=>{
+        event.preventDefault();
+        try {
+          const state=await api.getState();
+          if(state.running&&state.runningKind!=='login'){
+            window.alert('当前有云仓任务正在运行，请等待任务结束后再打开登录浏览器。');return;
+          }
+          window.open('/browser/','_blank','noopener,noreferrer');
+          if(!state.running)void api.refreshLogin().catch(error=>window.alert('登录流程未完成：'+error.message));
+        }catch(error){window.alert('无法打开登录浏览器：'+error.message);}
+      });
       link.textContent='菜鸟登录浏览器 ↗';actions.prepend(link);
     }
     const update=document.querySelector('#installUpdate');if(update)update.hidden=true;
