@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+origin="${wizard_public_origin:?Public origin is required}"
+if [[ ! "$origin" =~ ^https?://([A-Za-z0-9.-]+|\[[A-Fa-f0-9:]+\])(:[0-9]{1,5})?$ ]]; then
+  printf '%s\n' 'Invalid public origin: scheme and host only, no path or credentials.' > "${TRIM_TEMP_LOGFILE:?}"
+  exit 1
+fi
+printf '%s' "$origin" > "${TRIM_PKGVAR:?}/data/public-origin.next"
+mv "$TRIM_PKGVAR/data/public-origin.next" "$TRIM_PKGVAR/data/public-origin"

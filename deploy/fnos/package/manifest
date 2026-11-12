@@ -1,0 +1,13 @@
+appname=cainiao-warehouse
+version=0.10.0
+display_name=菜鸟云仓
+desc=独立云仓库存与月销量服务，私有浏览器登录及受控 ERP API
+source=thirdparty
+platform=x86
+maintainer=五成电子商务集团
+distributor=五成电子商务集团
+desktop_uidir=ui
+desktop_applaunchname=cainiao-warehouse.main
+service_port=18761
+checkport=true
+ctl_stop=true

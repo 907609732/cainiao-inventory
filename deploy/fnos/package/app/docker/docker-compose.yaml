@@ -1,0 +1,36 @@
+services:
+  warehouse:
+    image: cainiao-warehouse:0.10.0
+    pull_policy: never
+    container_name: cainiao-warehouse
+    restart: unless-stopped
+    init: true
+    user: "${TRIM_UID}:${TRIM_GID}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    shm_size: 512mb
+    stop_grace_period: 60s
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,mode=1777,size=512m
+    ports:
+      - "18761:18761"
+      - "127.0.0.1:18762:18762"
+    environment:
+      CAINIAO_DATA_DIR: /data
+      CAINIAO_GATEWAY_HOST: 0.0.0.0
+      CAINIAO_GATEWAY_PORT: "18761"
+      CAINIAO_API_HOST: 0.0.0.0
+      CAINIAO_API_PORT: "18762"
+      CAINIAO_BROWSER_URL: http://127.0.0.1:6080
+      DISPLAY: ":99"
+      HOME: /data/home
+      TZ: Asia/Shanghai
+      BUSINESS_TIME_ZONE: Asia/Shanghai
+    volumes:
+      - "${TRIM_PKGVAR}/data:/data"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

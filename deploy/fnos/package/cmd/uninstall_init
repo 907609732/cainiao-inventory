@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+# No removal of persistent data, backups, images or unrelated applications here.
+exit 0

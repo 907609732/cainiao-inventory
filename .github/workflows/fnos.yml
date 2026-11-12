@@ -1,0 +1,79 @@
+name: Independent fnOS package
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/fnos-standalone]
+  pull_request:
+    paths: ['deploy/fnos/**', 'scripts/fnos-*', 'tests/nas-package.test.mjs', 'windows/workbench/nas/**', '.github/workflows/fnos.yml']
+permissions:
+  contents: read
+concurrency:
+  group: fnos-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate package boundaries and backup restore
+        run: |
+          node --test tests/nas-package.test.mjs
+          bash -n deploy/fnos/entrypoint.sh deploy/fnos/package/cmd/*
+          TRIM_UID=1000 TRIM_GID=1000 TRIM_PKGVAR=/tmp/cainiao-warehouse docker compose -f deploy/fnos/package/app/docker/docker-compose.yaml config --quiet
+      - name: Build isolated Node 24 and exact lockfile Chromium image
+        run: docker build -f deploy/fnos/Dockerfile -t cainiao-warehouse:0.10.0 .
+      - name: Verify Chromium and Node sqlite as unprivileged runtime
+        run: |
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges --entrypoint node cainiao-warehouse:0.10.0 --input-type=module -e '
+            import { chromium } from "playwright";
+            import { DatabaseSync } from "node:sqlite";
+            if (process.getuid() === 0) throw new Error("root runtime");
+            const db = new DatabaseSync(":memory:");
+            if (db.prepare("select 1 as ok").get().ok !== 1) throw new Error("sqlite");
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage();
+            await page.setContent("<title>cainiao-linux-browser</title>");
+            if (await page.title() !== "cainiao-linux-browser") throw new Error("browser");
+            await browser.close(); db.close();'
+      - name: Save same-run image and provenance
+        run: |
+          mkdir -p dist/fnos
+          docker save cainiao-warehouse:0.10.0 | gzip > dist/fnos/cainiao-warehouse-0.10.0-image.tar.gz
+          docker image inspect cainiao-warehouse:0.10.0 > dist/fnos/image-inspect.json
+      - name: Runtime transport and four-page browser checks inside Linux image
+        run: |
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.0 --test tests/nas-runtime.test.mjs tests/nas-transport.test.mjs
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.0 tests/nas-ui.mjs
+      - name: Real entrypoint restart and offline restore smoke
+        run: node scripts/fnos-smoke.mjs
+      - name: Install checksum-verified official fnpack
+        run: |
+          curl --fail --location --silent --show-error https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 --output "$RUNNER_TEMP/fnpack"
+          echo "72d2a4095da676b64510b023731a227b369d80f8079bc45ff8a2f802ec0480c1  $RUNNER_TEMP/fnpack" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/fnpack"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends imagemagick
+      - name: Assemble native fnOS FPK
+        env:
+          FNPACK: ${{ runner.temp }}/fnpack
+        run: node scripts/fnos-build.mjs
+      - name: Upload private same-run installation set
+        uses: actions/upload-artifact@v4
+        with:
+          name: cainiao-warehouse-fnos-${{ github.run_id }}
+          path: |
+            dist/fnos/*.fpk
+            dist/fnos/*.tar.gz
+            dist/fnos/*.json
+            dist/fnos/SHA256SUMS
+            deploy/fnos/README.md
+            deploy/fnos/THIRD-PARTY.md
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
