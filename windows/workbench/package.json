@@ -53,6 +53,7 @@
     "playwright": "^1.49.1",
     "push-all-in-one": "4.6.0",
     "semver": "7.7.2",
+    "ws": "8.21.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "yauzl": "3.4.0",
     "zod": "^4.6.5"
