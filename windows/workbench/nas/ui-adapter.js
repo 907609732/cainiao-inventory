@@ -5,12 +5,19 @@
     const api = window.inventoryApp;
     if (api) {
       const links = {
+        openWebsite: 'https://lttlt.top',
         openRepository: 'https://github.com/907609732/cainiao-inventory',
         openReleaseNotes: 'https://github.com/907609732/cainiao-inventory/releases',
       };
       for (const [method,url] of Object.entries(links)) api[method] = async () => {
         window.open(url,'_blank','noopener,noreferrer'); return {opened:true};
       };
+      for(const method of ['openData','openLogs']){
+        const request=api[method];
+        api[method]=async()=>{
+          const result=await request();window.alert(result.message+'\n'+result.path);return result;
+        };
+      }
     }
     document.querySelector('#backHome')?.setAttribute('hidden','');
     document.querySelector('#openWebHeader')?.setAttribute('hidden','');
