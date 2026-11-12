@@ -11,13 +11,14 @@ const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length
 const fail=(status,code)=>Object.assign(new Error(code),{statusCode:status,publicCode:code});
 const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 
-export function createLocalWebServer({version,port=17891,instanceId=random(),ownerToken,dispatch,assets={},stateDir,verifyBearer=async()=>null}) {
+export function createLocalWebServer({version,port=17891,instanceId=random(),ownerToken,dispatch,assets={},stateDir,verifyBearer=async()=>null,authenticateRequest,healthIdentity={}}) {
  const app=Fastify({logger:false,bodyLimit:256*1024});
  const sessions=new Map(),tokens=new Map(),receipts=new Map(),previews=new Map();
  const events=[]; let cursor=0,origin='',persistQueue=Promise.resolve();
  const receiptDir=stateDir&&join(stateDir,'local-web-tasks');
  const persist=receipt=>{if(!receiptDir)throw fail(503,'STATE_UNAVAILABLE');const safe={...receipt};if(receipt.sensitive){delete safe.value;delete safe.response;safe.status='unknown';}const text=JSON.stringify(safe);persistQueue=persistQueue.then(async()=>{const file=join(receiptDir,receipt.taskId+'.json');await writeFile(file+'.tmp',text,{mode:0o600});await rename(file+'.tmp',file);});return persistQueue;};
  const authenticate=async req=>{
+  if(authenticateRequest){const context=await authenticateRequest(req);if(context)return context;}
   const bearer=/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1];
   if(bearer){if(ownerToken&&equal(bearer,ownerToken))return {kind:'owner',id:'owner',write:true};const credential=await verifyBearer(bearer);if(credential&&typeof credential.id==='string')return {kind:'ai',id:credential.id,write:credential.write===true};throw fail(401,'UNAUTHORIZED');}
   const session=sessions.get(req.cookies.warehouse_session);if(!session||session.expires<Date.now())throw fail(401,'UNAUTHORIZED');return {kind:'browser',id:session.id,write:true,csrf:session.csrf};
@@ -33,7 +34,7 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   if(!['GET','HEAD','POST'].includes(req.method))throw fail(405,'METHOD_NOT_ALLOWED');
   if(req.method==='POST'&&!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||''))throw fail(415,'JSON_REQUIRED');
  });
- app.get('/api/v1/health',async()=>({brand:'cainiao-cloud-warehouse',version,protocol:1,instanceId}));
+ app.get('/api/v1/health',async()=>({brand:'cainiao-cloud-warehouse',version,protocol:1,instanceId,...healthIdentity}));
  app.post('/api/v1/session',async(req,reply)=>{
   const token=req.body?.token,expires=tokens.get(token);tokens.delete(token);if(!expires||expires<Date.now())throw fail(401,'UNAUTHORIZED');
   const previous=sessions.get(req.cookies.warehouse_session);
@@ -50,6 +51,7 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   if(!payload||typeof payload!=='object'||Array.isArray(payload))throw fail(400,'INVALID_PAYLOAD');
   if(!validOperationPayload(name,payload))throw fail(400,'INVALID_PAYLOAD');
   if(op.ownerOnly&&ctx.kind!=='owner'||ctx.kind==='ai'&&!op.ai)throw fail(403,'FORBIDDEN');
+  if((op.write||name==='previewDateException')&&!ctx.write)throw fail(403,'READ_ONLY');
   if(op.write){if(!ctx.write)throw fail(403,'READ_ONLY');if(ctx.kind==='browser'&&!equal(req.headers['x-csrf-token'],ctx.csrf))throw fail(403,'CSRF_REQUIRED');if(ctx.kind==='ai'&&payload.confirmed!==true&&payload.confirmSend!==true&&payload.confirmSideEffect!==true)throw fail(403,'CONFIRMATION_REQUIRED');}
   if(name==='getEditableSecrets')return {ok:true,value:{}};
   const context={kind:ctx.kind,id:ctx.id,write:ctx.write};
@@ -76,3 +78,4 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   get address(){return origin;}
  };
 }
+
