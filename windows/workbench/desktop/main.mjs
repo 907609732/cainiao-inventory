@@ -1051,6 +1051,7 @@ async function dispatchWebOperation(name,payload={},context={}) {
   if(name==='syncMonthlySales')return runProcessAndWait('monthly-sales','web',{month:assertMonthInput(payload.month||latestCompleteMonth())});
   if(name==='backfillMonthlySales')return runProcessAndWait('monthly-backfill','web',validateBackfillRange(payload));
   if(name==='getEditableSecrets')return {};
+  if(name==='revealSecret'){if(context.kind!=='browser')throw Error('无权读取敏感设置');if(!EDITABLE_SECRET_FIELDS.includes(payload.field))throw Object.assign(Error('INVALID_FIELD'),{statusCode:400,publicCode:'INVALID_FIELD'});return {value:runtimeMode()==='client'?'':(await readSecrets())[payload.field]||''};}
   const channel=webChannels[name];
   if(!channel||!operationHandlers.has(channel))throw Error('不支持的本机操作');
   const value=await operationHandlers.get(channel)({localContext:context},payload);

@@ -84,3 +84,14 @@ test('private CLI owner is not exposed or obtainable through browser credential 
  const reader=await gateway.credentials.create();assert.equal((await call(gateway.apiAddress,'executeCli',{authorization:'Bearer '+reader.token},{request:{command:'status'}})).status,403);
  const login=await fetch(gateway.address+'/api/v1/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:'long-test-password'})});const cookie=login.headers.get('set-cookie').split(';')[0],{csrf}=await login.json();assert.equal((await call(gateway.address,'createAiCredential',{cookie,'x-csrf-token':csrf,'idempotency-key':'owner-injection'},{write:true,owner:true})).status,400);
 });
+
+test('eye reveals only the selected field to CSRF-protected browser, never service credentials or disk receipts',async t=>{
+ const {createNasRuntime}=await import('../nas/runtime.mjs');const {createNasGateway}=await import('../nas/server/gateway.mjs');const root=await mkdtemp(join(tmpdir(),'nas-eye-'));const runtime=await createNasRuntime({dataDir:root});await runtime.dispatch('saveSettingsSection',{section:'account',settings:{cainiaoUsername:'DEMO'},secrets:{cainiaoPassword:'eye-fixture-secret'}});const gateway=createNasGateway({runtime,root,browserPasswordRequired:false});await gateway.start();t.after(async()=>{await gateway.stop();await runtime.close();await rm(root,{recursive:true,force:true});});
+ const initial=await fetch(gateway.address+'/api/v1/session');const cookie=initial.headers.get('set-cookie').split(';')[0],{csrf}=await initial.json();
+ const reveal=(base,headers,field='cainiaoPassword')=>fetch(base+'/api/v1/call/revealSecret',{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify({field})});
+ const shown=await reveal(gateway.address,{cookie,'x-csrf-token':csrf});assert.equal(shown.status,200);assert.deepEqual(await shown.json(),{ok:true,value:{value:'eye-fixture-secret'}});
+ assert.equal((await reveal(gateway.address,{cookie})).status,403);
+ assert.equal((await reveal(gateway.address,{cookie,'x-csrf-token':csrf},'../master.key')).status,400);
+ const reader=await gateway.credentials.create({write:true});assert.equal((await reveal(gateway.apiAddress,{authorization:'Bearer '+reader.token})).status,403);
+ const {readdir}=await import('node:fs/promises');for(const f of await readdir(join(root,'local-web-tasks')))assert.ok(!(await readFile(join(root,'local-web-tasks',f),'utf8')).includes('eye-fixture-secret'));
+});

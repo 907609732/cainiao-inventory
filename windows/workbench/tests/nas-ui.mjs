@@ -34,6 +34,12 @@ try {
  await page.locator('[data-view="settings"]').click();
  assert.equal(await page.locator('#cainiaoUsername').inputValue(),'DEMO-NAS-ACCOUNT');
  assert.equal(await page.locator('#cainiaoPassword').inputValue(),'');
+ await page.locator('[data-secret-target="cainiaoPassword"]').click();
+ await page.waitForFunction(()=>document.getElementById('cainiaoPassword').value==='DEMO-NAS-PASSWORD'&&document.getElementById('cainiaoPassword').type==='text');
+ await page.locator('[data-secret-target="cainiaoPassword"]').click();
+ assert.equal(await page.locator('#cainiaoPassword').getAttribute('type'),'password');
+ assert.equal(await page.locator('#cainiaoPassword').inputValue(),'');
+
  const credential=await gateway.credentials.create();
  const query=await fetch(gateway.apiAddress+'/api/v1/call/getInventory',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+credential.token},body:'{}'});
  assert.equal(query.status,200);

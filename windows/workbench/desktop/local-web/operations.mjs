@@ -1,4 +1,4 @@
-const queries = ['getSettings','getInventory','getMonthlySales','getState','getLogs','getBranding','getAbout','getIntegration','getUpdateState','getLocalAccess','getCapabilities'];
+const queries = ['revealSecret','getSettings','getInventory','getMonthlySales','getState','getLogs','getBranding','getAbout','getIntegration','getUpdateState','getLocalAccess','getCapabilities'];
 const writes = ['checkForUpdates','saveSettings','saveSettingsSection','runNow','refreshLogin','stopTask','syncMonthlySales','backfillMonthlySales','sendDateException','openLogs','openData','openRepository','openWebsite','openReleaseNotes','createAiCredential','revokeAiCredential','openWeb'];
 const ai = new Set(['getCapabilities','getInventory','getMonthlySales','getState','getLogs','getBranding','getAbout','runNow','refreshLogin','stopTask','syncMonthlySales','backfillMonthlySales','previewDateException','sendDateException']);
 const tasks = new Set(['runNow','refreshLogin','syncMonthlySales','backfillMonthlySales','sendDateException','executeCli']);
@@ -11,6 +11,7 @@ export function operationPolicy(name,payload){
 
 const confirmation={confirmed:'boolean',confirmSend:'boolean',confirmSideEffect:'boolean'};
 const fields={
+ revealSecret:{field:'string'},
  getMonthlySales:{year:['string','number'],selectedMonth:'string',scope:'string',seriesMode:'string',sku:'string'},
  saveSettings:{settings:'object',secrets:'object',clearSecrets:'array'},
  saveSettingsSection:{section:'string',settings:'object',secrets:'object',clearSecrets:'array'},

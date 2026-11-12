@@ -46,17 +46,24 @@ const editableSecretFields = [
   "dingtalkWebhookSecret"
 ];
 
+const revealedSecretValues = new Map();
+let secretVisibilityEpoch = 0;
 function setSecretVisible(fieldId, visible) {
   const input = byId(fieldId);
   const button = document.querySelector(`[data-secret-target="${fieldId}"]`);
   input.type = visible ? "text" : "password";
-  button.textContent = visible ? "隐藏" : "显示";
+  button.innerHTML = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>' + (visible ? '<path d="M3 3l18 18"/>' : '') + '</svg>';
+  if (!visible && revealedSecretValues.has(fieldId)) {
+    if (input.value === revealedSecretValues.get(fieldId)) input.value = '';
+    revealedSecretValues.delete(fieldId);
+  }
   button.setAttribute("aria-pressed", String(visible));
   const label = input.closest(".secret-field")?.querySelector("label")?.textContent?.trim() || "敏感内容";
   button.setAttribute("aria-label", `${visible ? "隐藏" : "显示"}${label}`);
 }
 
 function hideAllSecrets() {
+  secretVisibilityEpoch++;
   for (const fieldId of editableSecretFields) setSecretVisible(fieldId, false);
 }
 
@@ -585,11 +592,24 @@ document.querySelectorAll("[data-inventory-filter]").forEach((button) => button.
   if (inventoryReport?.available) renderInventoryGrid();
 }));
 
-document.querySelectorAll("[data-secret-target]").forEach((button) => button.addEventListener("click", () => {
-  const fieldId = button.dataset.secretTarget;
-  setSecretVisible(fieldId, byId(fieldId).type === "password");
+document.querySelectorAll("[data-secret-target]").forEach((button) => button.addEventListener("click", async () => {
+  const fieldId = button.dataset.secretTarget, input = byId(fieldId);
+  if (input.type !== "password") { setSecretVisible(fieldId, false); return; }
+  const epoch = secretVisibilityEpoch;
+  button.disabled = true;
+  try {
+    if (!input.value && !clearSecretKeys.has(fieldId) && api.revealSecret) {
+      const result = await api.revealSecret({field:fieldId});
+      if (epoch !== secretVisibilityEpoch) return;
+      input.value = result.value || '';
+      revealedSecretValues.set(fieldId, input.value);
+    }
+    if (epoch === secretVisibilityEpoch) setSecretVisible(fieldId, true);
+  } catch { appendLog({line:'无法显示已保存的密钥，请检查后台连接。'}); }
+  finally { button.disabled = false; }
 }));
 window.addEventListener("blur", hideAllSecrets);
+window.addEventListener("pagehide", hideAllSecrets);
 
 document.querySelectorAll('input[name="deliveryMode"]').forEach((input) => input.addEventListener("change", toggleDeliveryFields));
 byId("accountSettingsForm").addEventListener("submit", (event) => {
