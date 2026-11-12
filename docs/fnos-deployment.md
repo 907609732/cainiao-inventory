@@ -113,10 +113,18 @@ CLI 显式 `collect-only --confirm-collect` 可执行真实采集、校验、入
 - 没有重发未知回执任务，没有运行新的采集或通知发送。真实钉钉群发送未验收；修复通过真实 sendNotificationReport 校验及假 provider 回执测试验证。旧失败日志和审计记录保留。
 - 功能复用现有 Electron 安全存储、Fastify 会话、通知配置及发送实现，无新依赖。ERP 工作树、数据、原 Windows 配置未修改。
 
-## 0.10.4 飞牛内嵌入口与指定访问域名（进行中）
+## 0.10.4 飞牛内嵌入口与指定访问域名（已安装）
 
 用户在飞牛分配的应用域名看到 INVALID_HOST，且 url 类型入口另开标签影响 Grokbot 访问。根因是安装入口使用 url，网关只接受一个内网 origin。
 
 复用 fnOS 的 iframe 入口配置；通过安装/配置/升级向导显式声明额外完整 origin，持久写入本应用 additional-origins 文件。网关按请求 Host 精确匹配已配置 origin，校验同源请求，外部 HTTPS 会话设置 Secure Cookie；不信任客户端传入的 Forwarded Host，不开放任意域名。内网服务和仅宿主回环的 ERP API 保持原边界。可视浏览器 HTTP/WS 走相同域名匹配规则。
 
 参考 fnOS 入口字段说明：https://developer.fnnas.com/docs/core-concepts/app-entry/ 。原 ERP 的窗口与数据不修改。定时任务设置与库存需在升级后复核。
+
+### 0.10.4 实机验收
+
+- 构建提交 58b5356a113a87f1510242065a0324333d6eccba；fnOS run 43213481750、Windows run 43213481649 均通过。下载同次制品并核验摘要后，通过应用中心更新现有独立云仓。
+- FPK SHA256 4683a75e7af88d2ce7f639c27f83c95ebbe23c68bb895a159fcf9765495a54b7；镜像 GZ SHA256 172abc4a3da742d6ad27995d0e23cd381594462d248566eb6c889e56badda005。
+- LAN 健康接口及指定应用域名 Host 探针均返回 0.10.4，datasetId 不变；升级前后完整设置与库存快照相等。私有验收备份保留在本机，不提交配置内容。
+- 本机 Chrome 双击飞牛桌面的菜鸟云仓图标，实际出现内嵌窗口和云仓 iframe，标签页数量未增加；窗口显示下次执行 11/12 22:00，API 确认 schedulingOwner=nas、无正在运行或排队任务。
+- 本次没有同步库存、发送通知或修改 ERP。指定域名的应用侧校验通过；Grok Bot 自身远程浏览器和飞牛外网认证入口尚未完成端到端复测，不能据此声称已验收。
