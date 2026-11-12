@@ -1,3 +1,4 @@
+import { formatDingTalkInventoryMarkdown } from "./dingtalk-inventory-format.js";
 import crypto from "node:crypto";
 import axios from "axios";
 import { sendDingTalkAppRobotMessage } from "./dingtalk-app-robot.js";
@@ -112,7 +113,7 @@ async function sendDingTalkWebhook(payload, webhook = process.env.DINGTALK_WEBHO
 export function buildDingTalkMarkdownPayload({ title, text, atUserIds = [], atMobiles = [] }) {
   return {
     msgtype: "markdown",
-    markdown: { title, text },
+    markdown: { title, text: formatDingTalkInventoryMarkdown(text) },
     at: buildAtPayload({ atUserIds, atMobiles })
   };
 }

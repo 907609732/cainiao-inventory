@@ -493,20 +493,22 @@ export function buildInventoryMarkdown(format = "grouped", reportOverride = null
   const periodSummary = buildInventoryPeriodSummary(alertItems);
   const rows = alertItems.slice(0, 30).map((item) => {
     const days = Number.isFinite(item.sellableDays) ? Math.round(item.sellableDays) : "N/A";
-    // 钉钉消息宽度有限：只缩短显示名称，不修改库存原始数据或 SKU。
-    const nameChars = Array.from(String(item.name || "—").replace(/[\r\n]+/g, " "));
-    let displayName = "", displayWidth = 0;
-    for (const char of nameChars) {
-      const width = /[\x00-\x7f]/.test(char) ? 1 : 2;
-      if (displayWidth + width > 16) { displayName += "…"; break; }
-      displayName += char;
-      displayWidth += width;
+    // 名称按显示宽度换行，保留全部字符；SKU 和数字不截断。
+    const lines = [];
+    let line = "", width = 0;
+    for (const char of String(item.name || "—").replace(/[\r\n]+/g, " ")) {
+      const charWidth = /[\x00-\x7f]/.test(char) ? 1 : 2;
+      if (width + charWidth > 24) { lines.push(line); line = ""; width = 0; }
+      line += char;
+      width += charWidth;
     }
-    const productName = displayName.replace(/\|/g, "\\|");
-    return "| " + productName + " | " + item.sku + " | " + item.totalQuantity + " / " + (item.near30DaysSales || 0) + " | " + days + " | " + formatInventoryAlertLabel(item.stockAlert.level) + " |";
+    lines.push(line);
+    const productName = lines.map(part => part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\|/g, "\\|")).join("<br>");
+    const sku = String(item.sku).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\|/g, "\\|");
+    return "| " + productName + " | " + sku + " | " + item.totalQuantity + "/" + (item.near30DaysSales || 0) + " | " + days + " | " + formatInventoryAlertLabel(item.stockAlert.level) + " |";
   });
   const lowStockText = rows.length
-    ? ["| \u8D27\u54C1\u540D\u79F0 | SKU | \u5E93\u5B58/\u9500\u91CF | \u53EF\u552E\u5929\u6570 | \u9884\u8B66 |", "|---|---|---|---:|---|", ...rows].join("\n")
+    ? ["| \u8D27\u54C1\u540D\u79F0 | SKU | \u5E93\u5B58/\u9500\u91CF | \u5929\u6570 | \u9884\u8B66 |", "|---|---|---|---:|---|", ...rows].join("\n")
     : "\u2705 \u6682\u65E0\u9884\u8B66\u4E00\u4E2A\u6708\u5185\u9700\u8981\u8865\u8D27\u7684 SKU\u3002";
   return {
     title: "ERP\u5E93\u5B58\u9884\u8B66 " + reportDate,

@@ -1,3 +1,4 @@
+import { formatDingTalkInventoryMarkdown } from "./dingtalk-inventory-format.js";
 import axios from "axios";
 
 const DINGTALK_ACCESS_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/accessToken";
@@ -45,7 +46,7 @@ export function buildDingTalkAppRobotGroupPayload({ robotCode, conversationId, m
     robotCode: String(robotCode || "").trim(),
     openConversationId: String(conversationId || "").trim(),
     msgKey: String(msgKey || "").trim(),
-    msgParam: JSON.stringify(msgParam)
+    msgParam: JSON.stringify(String(msgKey).trim() === "sampleMarkdown" ? {...msgParam, text: formatDingTalkInventoryMarkdown(msgParam?.text)} : msgParam)
   };
 }
 

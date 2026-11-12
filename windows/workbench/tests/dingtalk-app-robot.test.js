@@ -40,3 +40,18 @@ test("DingTalk API errors keep actionable codes while redacting sensitive values
   assert.match(error.message, /Request ID request-123/);
   assert.doesNotMatch(error.message, /very-secret/);
 });
+
+
+test("both DingTalk transports use compact SKU and quantity text without losing digits", async () => {
+  const {buildDingTalkMarkdownPayload}=await import('../core/dingtalk.js');
+  const text='| 货品名称 | SKU | 库存/销量 | 天数 | 预警 |\n|---|---|---|---:|---|\n| 演示商品完整名称<br>剩余规格 | DEMO-LONG-SKU-123456789 | 123456789/987654321 | 12345 | 🔴 不够卖 1 周 |';
+  const webhook=buildDingTalkMarkdownPayload({title:'虚构报告',text}).markdown.text;
+  const app=JSON.parse(buildDingTalkAppRobotGroupPayload({robotCode:'demo',conversationId:'demo',msgKey:'sampleMarkdown',msgParam:{title:'虚构报告',text}}).msgParam).text;
+  assert.equal(app,webhook);
+  assert.equal(buildDingTalkMarkdownPayload({title:'again',text:app}).markdown.text,app);
+  assert.ok(app.includes('<font size="2">DEMO-LONG-SKU-123456789</font>'));
+  assert.ok(app.includes('<font size="2">123456789/987654321</font>'));
+  assert.ok(app.includes('| 12345 | 🔴 不够卖 1 周 |'));
+  assert.ok(app.includes('演示商品完整名称<br>剩余规格'));
+  assert.equal(buildDingTalkMarkdownPayload({title:'other',text:'unchanged'}).markdown.text,'unchanged');
+});

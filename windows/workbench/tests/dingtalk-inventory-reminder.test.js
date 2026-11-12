@@ -130,8 +130,9 @@ test("builds inventory Markdown with real line breaks", () => {
   });
   assert.match(report.text, /\n/);
   assert.equal(report.text.includes("\\n"), false);
-  assert.match(report.text, /\| \u8D27\u54C1\u540D\u79F0 \| SKU \| \u5E93\u5B58\/\u9500\u91CF \| \u53EF\u552E\u5929\u6570 \| \u9884\u8B66 \|/);
-  assert.ok(report.text.includes("| 螺丝-小米钥匙白… | BSYSLS01 | 6 / 30 | 6 | 🔴 不够卖 1 周 |"));
+  assert.match(report.text, /\| \u8D27\u54C1\u540D\u79F0 \| SKU \| \u5E93\u5B58\/\u9500\u91CF \| \u5929\u6570 \| \u9884\u8B66 \|/);
+  assert.ok(report.text.includes("| 螺丝-小米钥匙白色螺丝(ba<br>ise) | BSYSLS01 | 6/30 | 6 | 🔴 不够卖 1 周 |"));
+  assert.equal(report.text.includes("…"), false);
   assert.equal(report.alertItems[0].name, "螺丝-小米钥匙白色螺丝(baise)");
 });
 
@@ -402,4 +403,22 @@ test("a failed inventory validation closes an active reminder without sending", 
   assert.equal(sendCount, 0);
   assert.equal(manager.getStatus().active, false);
   assert.equal(manager.getStatus().resolvedReason, "inventory_data_validation_failed");
+});
+
+
+test("wrapped names retain Unicode and escape cell markup while large numbers stay complete", () => {
+  const name='演示超长商品😀规格<测试>|完整名称-ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const sku='DEMO-12345678901234567890';
+  const report=buildInventoryMarkdown('table',{snapshotDate:'2026-11-12',skuCount:1,totalQuantity:123456789,lowStockItems:[{name,sku,totalQuantity:123456789,near30DaysSales:987654321,sellableDays:12345,stockAlert:{level:'warning'}}]});
+  const row=report.text.split('\n').find(line=>line.includes(sku));
+  const cells=row.split(/(?<!\\)\|/).slice(1,-1).map(value=>value.trim());
+  assert.equal(cells.length,5);
+  assert.ok(cells[0].includes('<br>'));
+  const recovered=cells[0].replaceAll('<br>','').replaceAll('\\|','|').replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&');
+  assert.equal(recovered,name);
+  assert.equal(cells[1],sku);
+  assert.equal(cells[2],'123456789/987654321');
+  assert.equal(cells[3],'12345');
+  assert.equal(report.alertItems[0].name,name);
+  assert.ok(!report.text.includes('<font'));
 });
