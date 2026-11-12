@@ -2,15 +2,16 @@ import { spawnSync } from 'node:child_process';
 const image = 'cainiao-warehouse:0.10.0';
 const suffix = `${process.env.GITHUB_RUN_ID || process.pid}-${process.env.GITHUB_RUN_ATTEMPT || '1'}`;
 const name = `cainiao-warehouse-ci-${suffix}`, volume = `${name}-data`;
+const dynamicName = `${name}-dynamic-uid`;
 function docker(args, { capture = false, allowFailure = false } = {}) {
   const result = spawnSync('docker', args, { encoding: 'utf8', stdio: capture ? 'pipe' : 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0 && !allowFailure) throw new Error(`docker ${args[0]} failed`);
   return result.stdout?.trim() || '';
 }
-async function healthy() {
+async function healthy(target = name) {
   for (let attempt = 0; attempt < 90; attempt++) {
-    const status = docker(['inspect', '--format={{.State.Health.Status}}', name], { capture: true });
+    const status = docker(['inspect', '--format={{.State.Health.Status}}', target], { capture: true });
     if (status === 'healthy') return;
     if (status === 'unhealthy') throw new Error('Container became unhealthy');
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -27,10 +28,17 @@ async function recoveredAfter(restartCount) {
 }
 try {
   docker(['volume', 'create', volume], { capture: true });
-  docker(['run', '--rm', '-v', `${volume}:/data`, '--entrypoint', 'node', image, '--input-type=module', '-e', 'import fs from "node:fs"; import {randomBytes} from "node:crypto"; fs.writeFileSync("/data/public-origin","http://127.0.0.1:18761",{mode:0o600}); fs.writeFileSync("/data/admin-password",randomBytes(24).toString("base64url"),{mode:0o600});']);
+  docker(['run', '--rm', '-v', `${volume}:/data`, '--entrypoint', 'node', image, '--input-type=module', '-e', 'import fs from "node:fs"; import {randomBytes} from "node:crypto"; for(const path of ["/data","/data/home","/data/home/.config","/data/home/.cache"]){if(fs.statSync(path).uid!==process.getuid())throw new Error("Image volume copied incorrect ownership");fs.accessSync(path,fs.constants.W_OK);}fs.writeFileSync("/data/public-origin","http://127.0.0.1:18761",{mode:0o600}); fs.writeFileSync("/data/admin-password",randomBytes(24).toString("base64url"),{mode:0o600});']);
   docker(['run', '-d', '--name', name, '--restart=unless-stopped', '--read-only', '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777,size=512m', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--shm-size=512m', '-v', `${volume}:/data`, '-e', 'CAINIAO_DATA_DIR=/data', '-e', 'CAINIAO_GATEWAY_HOST=0.0.0.0', '-e', 'CAINIAO_GATEWAY_PORT=18761', '-e', 'CAINIAO_API_HOST=0.0.0.0', '-e', 'CAINIAO_API_PORT=18762', '-e', 'CAINIAO_BROWSER_URL=http://127.0.0.1:6080', '-e', 'TZ=Asia/Shanghai', image], { capture: true });
   await healthy();
-  docker(['exec', name, 'node', '--input-type=module', '-e', 'import fs from "node:fs";import {chromium} from "playwright";for(const key of ["XDG_CONFIG_HOME","XDG_CACHE_HOME"]){if(!process.env[key]?.startsWith("/data/home/"))throw new Error("Missing private writable browser directory");fs.accessSync(process.env[key],fs.constants.W_OK);}const browser=await chromium.launch({headless:false});try{const page=await browser.newPage();await page.setContent("<title>cainiao-headed-xvfb-fixture</title>");if(await page.title()!=="cainiao-headed-xvfb-fixture")throw new Error("Headed Xvfb browser fixture failed");}finally{await browser.close();}']);
+  const headedFixture = 'import fs from "node:fs";import {chromium} from "playwright";for(const key of ["XDG_CONFIG_HOME","XDG_CACHE_HOME"]){if(!process.env[key]?.startsWith("/data/home/"))throw new Error("Missing private writable browser directory");if(fs.statSync(process.env[key]).uid!==process.getuid())throw new Error("Browser directory owner mismatch");fs.accessSync(process.env[key],fs.constants.W_OK);}const browser=await chromium.launch({headless:false});try{const page=await browser.newPage();await page.setContent("<title>cainiao-headed-xvfb-fixture</title>");if(await page.title()!=="cainiao-headed-xvfb-fixture")throw new Error("Headed Xvfb browser fixture failed");}finally{await browser.close();}';
+  docker(['exec', name, 'node', '--input-type=module', '-e', headedFixture]);
+  // fnOS package UIDs need not exist in /etc/passwd. Give an arbitrary UID its
+  // own private writable data mount while keeping the production restrictions.
+  docker(['run', '-d', '--name', dynamicName, '--user=23456:23456', '--read-only', '--tmpfs', '/data:rw,nosuid,nodev,uid=23456,gid=23456,mode=0700,size=128m', '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777,size=512m', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--shm-size=512m', '-e', 'CAINIAO_PUBLIC_ORIGIN=http://127.0.0.1:18761', '-e', 'CAINIAO_DATA_DIR=/data', '-e', 'CAINIAO_GATEWAY_HOST=0.0.0.0', '-e', 'CAINIAO_API_HOST=0.0.0.0', '-e', 'CAINIAO_BROWSER_URL=http://127.0.0.1:6080', '-e', 'TZ=Asia/Shanghai', image], { capture: true });
+  await healthy(dynamicName);
+  docker(['exec', dynamicName, 'node', '--input-type=module', '-e', headedFixture]);
+  docker(['stop', '--time', '60', dynamicName], { capture: true });
   const fingerprint = () => docker(['exec', name, 'node', '--input-type=module', '-e', 'import fs from "node:fs"; import {createHash} from "node:crypto";process.stdout.write(createHash("sha256").update(fs.readFileSync("/data/dataset.json")).update(fs.readFileSync("/data/master.key")).digest("hex"));'], { capture: true });
   const before = fingerprint();
   docker(['restart', '--time', '60', name], { capture: true });
@@ -48,8 +56,10 @@ try {
 } catch (error) {
   // Runtime logs must already redact secrets; do not dump Docker env or data.
   docker(['logs', '--tail', '100', name], { allowFailure: true });
+  docker(['logs', '--tail', '100', dynamicName], { allowFailure: true });
   throw error;
 } finally {
   docker(['rm', '-f', name], { allowFailure: true, capture: true });
+  docker(['rm', '-f', dynamicName], { allowFailure: true, capture: true });
   docker(['volume', 'rm', volume], { allowFailure: true, capture: true });
 }

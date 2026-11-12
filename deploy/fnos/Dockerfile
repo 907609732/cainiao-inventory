@@ -1,6 +1,5 @@
 FROM node:24-bookworm-slim
-ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/opt/playwright DISPLAY=:99 HOME=/data/home \
-    XDG_CONFIG_HOME=/data/home/.config XDG_CACHE_HOME=/data/home/.cache
+ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/opt/playwright HOME=/root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb x11vnc novnc websockify tini fonts-noto-cjk ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -18,7 +17,12 @@ COPY windows/workbench/scripts ./scripts
 COPY deploy/fnos/entrypoint.sh /app/entrypoint.sh
 COPY deploy/fnos/healthcheck.mjs /app/healthcheck.mjs
 COPY scripts/fnos-backup.mjs /app/scripts/fnos-backup.mjs
-RUN chmod 755 /app/entrypoint.sh && mkdir -p /data && chown 1000:1000 /data
+RUN chmod 755 /app/entrypoint.sh \
+    && mkdir -p /data/home/.config /data/home/.cache \
+    && chmod 700 /data/home /data/home/.config /data/home/.cache \
+    && chown -R 1000:1000 /data
+ENV DISPLAY=:99 HOME=/data/home \
+    XDG_CONFIG_HOME=/data/home/.config XDG_CACHE_HOME=/data/home/.cache
 USER 1000:1000
 EXPOSE 18761 18762
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 CMD ["node", "/app/healthcheck.mjs"]

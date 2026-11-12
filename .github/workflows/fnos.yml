@@ -41,17 +41,17 @@ jobs:
             await page.setContent("<title>cainiao-linux-browser</title>");
             if (await page.title() !== "cainiao-linux-browser") throw new Error("browser");
             await browser.close(); db.close();'
-      - name: Save same-run image and provenance
-        run: |
-          mkdir -p dist/fnos
-          docker save cainiao-warehouse:0.10.0 | gzip > dist/fnos/cainiao-warehouse-0.10.0-image.tar.gz
-          docker image inspect cainiao-warehouse:0.10.0 > dist/fnos/image-inspect.json
       - name: Runtime transport and four-page browser checks inside Linux image
         run: |
           docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.0 --test tests/nas-runtime.test.mjs tests/nas-transport.test.mjs
           docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.0 tests/nas-ui.mjs
       - name: Real entrypoint restart and offline restore smoke
         run: node scripts/fnos-smoke.mjs
+      - name: Save same-run image and provenance
+        run: |
+          mkdir -p dist/fnos
+          docker save cainiao-warehouse:0.10.0 | gzip > dist/fnos/cainiao-warehouse-0.10.0-image.tar.gz
+          docker image inspect cainiao-warehouse:0.10.0 > dist/fnos/image-inspect.json
       - name: Install checksum-verified official fnpack
         run: |
           curl --fail --location --silent --show-error https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 --output "$RUNNER_TEMP/fnpack"
