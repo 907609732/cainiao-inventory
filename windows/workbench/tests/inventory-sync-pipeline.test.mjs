@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createHash} from 'node:crypto';
+import {deliverInventoryReport} from '../core/inventory-delivery.mjs';
 
 const source=fs.readFileSync(new URL('../core/sync-cainiao-inventory.js',import.meta.url),'utf8');
 const body=source.slice(source.indexOf('async function synchronizeInventory('),source.indexOf('export async function main()'));
-async function run(ok){
+async function run(ok,collectOnly=false){
   const events=[];
-  const context={console:{log(){}},process:{env:{}},createHash,
+  const context={console:{log(){}},process:{env:{CAINIAO_COLLECT_ONLY:collectOnly?'1':'0'}},createHash,deliverInventoryReport,
     fs:{existsSync:()=>true,readFileSync:()=>Buffer.from('inventory fixture')},
     exportWithSingleAuthRecovery:async()=>'/fixture.xlsx',expectedInventoryDate:()=> '2026-10-29',
     downloadDir:'/downloads',findLatestPriorCainiaoFile:()=>'',
@@ -33,4 +34,10 @@ test('downloaded inventory reaches validation, import, pruning and delivery',asy
 test('invalid inventory stops before import and delivery',async()=>{
   const {task,events}=await run(false);await assert.rejects(task,/库存数据校验失败/);
   assert.deepEqual(events.filter(x=>typeof x==='string'),['validate']);
+});
+test('explicit collection-only still validates and imports but never calls delivery',async()=>{
+  const {task,events}=await run(true,true);await task;
+  assert.deepEqual(events.filter(x=>typeof x==='string'),['validate','import','prune']);
+  assert.ok(events.some(x=>x.deliveryStatus==='skipped'));
+  assert.equal(events.some(x=>x.deliveryStatus==='accepted'),false);
 });
