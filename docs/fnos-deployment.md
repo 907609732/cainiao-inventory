@@ -13,6 +13,10 @@
 - NAS 管理入口 `http://192.168.1.100:5666/`；当前会话和安装权限需重新确认。
 - 当前 Windows 版本 0.9.8；开发分支 `codex/fnos-standalone`。
 - `E:\WuchengBuilds\fnos-ci-repair` 和现有 ERP 共享浏览器均不属于本任务。
+- 在独立 Chrome 检查页实查：飞牛已有认证会话；Docker 服务健康，3 个项目和 3 个容器运行，Docker 开机启动已启用；Docker 位于存储空间 4，其界面显示约 111.63/407.48 GB 已用。未停止或修改这些容器。
+- 计划网页 `http://192.168.1.100:18761/`，ERP 服务端 API `http://127.0.0.1:18762`；未确认安装前端口空闲，尚无真实 datasetId。与 ERP 共享浏览器端口无关。
+- 本地 NAS 网页集成测试通过：完整四页面、空数据集、虚构账号保存与刷新、密钥不回传、ERP 只读查询；运行 `node windows/workbench/tests/nas-ui.mjs`。这不代表 Linux/NAS 或真实菜鸟采集已通过。
+- 定向传输与原 Windows 传输测试 10 项通过；noVNC 测试使用 HTTP/WS 测试端点验证鉴权，未代替真实 NAS 浏览器验收。
 
 ## 验收清单
 
