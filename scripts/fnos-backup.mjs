@@ -33,6 +33,19 @@ async function requireStopped(root) {
     if (!Number.isSafeInteger(record.pid) || record.pid <= 0) throw new Error('Invalid service lock; cannot prove stopped');
     try { process.kill(record.pid, 0); }
     catch (error) { if (error.code === 'ESRCH') continue; throw new Error('Service lock owner cannot be verified stopped'); }
+    if (process.platform === 'linux' && record.processStart) {
+      if (typeof record.processStart.bootId !== 'string' || !record.processStart.bootId || !/^\d+$/.test(record.processStart.startTime || '')) throw new Error('Invalid service process identity; cannot prove stopped');
+      try {
+        const stat = await readFile(`/proc/${record.pid}/stat`, 'utf8');
+        const bootId = (await readFile('/proc/sys/kernel/random/boot_id', 'utf8')).trim();
+        const startTime = stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
+        if (!startTime || !bootId) throw new Error('Incomplete process identity');
+        if (record.processStart.bootId !== bootId || record.processStart.startTime !== startTime) continue;
+      } catch (error) {
+        if (error.code === 'ENOENT' || error.code === 'ESRCH') continue;
+        throw new Error('Service process identity cannot be verified stopped');
+      }
+    }
     throw new Error('Service must be stopped; live process lock exists');
   }
 }
