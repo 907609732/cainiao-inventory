@@ -2,15 +2,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import {randomBytes} from 'node:crypto';
 import {chromium} from 'playwright';
 import {createNasRuntime} from '../nas/runtime.mjs';
 import {createNasGateway} from '../nas/server/gateway.mjs';
 
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'cainiao-nas-ui-'));
 const runtime=await createNasRuntime({dataDir:root});
-const password=randomBytes(24).toString('base64url');
-const gateway=createNasGateway({runtime,root,adminPassword:password});
+const gateway=createNasGateway({runtime,root,browserPasswordRequired:false});
 let browser;
 try {
  await gateway.start();await runtime.start();
@@ -18,8 +16,8 @@ try {
  const page=await browser.newPage();const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(gateway.address);
- await page.locator('input[type="password"]').fill(password);
- await page.getByRole('button',{name:'登录',exact:true}).click();
+
+
  await page.locator('#warehouseLoading').waitFor({state:'hidden'});
  await page.locator('#nasBrowserEntry').waitFor();
  for(const view of ['dashboard','inventory','sales','settings']){

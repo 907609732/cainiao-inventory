@@ -20,7 +20,7 @@ export function browserAssets(){
  for(const f of ['gridjs/dist/theme/mermaid.min.css','gridjs/dist/gridjs.production.min.js','echarts/dist/echarts.min.js'])assets['/node_modules/'+f]=join(appRoot,'node_modules',f);
  return assets;
 }
-export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,adminPassword,apiPort=0,apiHost='127.0.0.1',assets=browserAssets(),browserUrl}){
+export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,adminPassword,browserPasswordRequired=true,apiPort=0,apiHost='127.0.0.1',assets=browserAssets(),browserUrl}){
  if(!runtime?.identity?.datasetId||!root)throw Error('Runtime identity and root required');
  if(!['127.0.0.1','localhost','::1'].includes(host)&&!origin)throw Error('Public gateway requires explicit origin');
  if(origin){const u=new URL(origin);if(!['http:','https:'].includes(u.protocol)||u.origin!==origin)throw Error('Invalid gateway origin');}
@@ -36,6 +36,7 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
   async revoke(id){db.credentials=db.credentials.filter(c=>c.id!==id);await save();},
   async list(){return db.credentials.filter(c=>!c.owner).map(({id,write})=>({id,write}));}
  };
+ const createSession=reply=>{const s={id:random(),csrf:random(),expires:Date.now()+43200000};sessions.set(s.id,s);reply.setCookie('nas_session',s.id,{httpOnly:true,sameSite:'strict',secure:(origin||address).startsWith('https:'),path:'/',maxAge:43200});return s;};
  const session=req=>{const s=sessions.get(req.cookies?.nas_session);return s&&s.expires>Date.now()?s:null;};
  const configure=(app,isWeb)=>{
   app.register(cookie);
@@ -46,6 +47,7 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
    if(req.headers.host!==new URL(expected).host)throw error(403,'INVALID_HOST');
    if(req.headers.origin&&req.headers.origin!==expected||req.headers['sec-fetch-site']==='cross-site')throw error(403,'INVALID_ORIGIN');
    if(!['GET','POST','HEAD'].includes(req.method))throw error(405,'METHOD_NOT_ALLOWED');
+   if(isWeb&&!browserPasswordRequired&&req.method==='GET'&&['/','/api/v1/session'].includes(req.url)&&!session(req)){const s=createSession(reply);req.cookies.nas_session=s.id;}
    if(req.method==='POST'&&!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||''))throw error(415,'JSON_REQUIRED');
   });
   app.get('/api/v1/health',async()=>({brand:'cainiao-cloud-warehouse',protocol:1,instanceId:boot,platform:'fnos',...runtime.identity}));
@@ -71,12 +73,12 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
   const path=req.url.slice('/browser'.length);if(path.includes('..')||path.startsWith('//'))throw error(400,'INVALID_PATH');
   const response=await fetch(new URL(path,browserUrl),{redirect:'error'});reply.code(response.status).type(response.headers.get('content-type')||'application/octet-stream');return reply.send(Buffer.from(await response.arrayBuffer()));
  });
- web.get('/login',async(req,reply)=>reply.type('text/html').send('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>菜鸟云仓登录</title><h1>菜鸟云仓</h1><form><label>管理员密码 <input type="password" autocomplete="current-password" required></label><button>登录</button><p role="status"></p></form><script>document.querySelector("form").onsubmit=async e=>{e.preventDefault();const r=await fetch("/api/v1/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.querySelector("input").value})});if(r.ok)location.replace("/");else document.querySelector("p").textContent="登录失败";};</script></html>'));
+ web.get('/login',async(req,reply)=>!browserPasswordRequired?reply.redirect('/'):reply.type('text/html').send('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>菜鸟云仓登录</title><h1>菜鸟云仓</h1><form><label>管理员密码 <input type="password" autocomplete="current-password" required></label><button>登录</button><p role="status"></p></form><script>document.querySelector("form").onsubmit=async e=>{e.preventDefault();const r=await fetch("/api/v1/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.querySelector("input").value})});if(r.ok)location.replace("/");else document.querySelector("p").textContent="登录失败";};</script></html>'));
  const attempts=new Map();
  web.post('/api/v1/session',async(req,reply)=>{
   const key=req.ip,record=attempts.get(key)||{count:0,until:Date.now()+60000};if(record.until<Date.now()){record.count=0;record.until=Date.now()+60000;}attempts.set(key,record);if(++record.count>10)throw error(429,'TOO_MANY_ATTEMPTS');
-  if(typeof req.body?.password!=='string'||req.body.password.length>1024||!equal(scryptSync(req.body.password,db.salt,32).toString('hex'),db.password))throw error(401,'UNAUTHORIZED');
-  attempts.delete(key);const s={id:random(),csrf:random(),expires:Date.now()+43200000};sessions.set(s.id,s);reply.setCookie('nas_session',s.id,{httpOnly:true,sameSite:'strict',secure:(origin||address).startsWith('https:'),path:'/',maxAge:43200});return {csrf:s.csrf};
+  if(browserPasswordRequired&&(typeof req.body?.password!=='string'||req.body.password.length>1024||!equal(scryptSync(req.body.password,db.salt,32).toString('hex'),db.password)))throw error(401,'UNAUTHORIZED');
+  attempts.delete(key);const s=createSession(reply);return {csrf:s.csrf};
  });
  web.get('/api/v1/session',async req=>{const s=session(req);if(!s)throw error(401,'UNAUTHORIZED');return {csrf:s.csrf};});
  async function proxy(req,reply,isWeb){
@@ -88,7 +90,7 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
  }
  web.setNotFoundHandler((req,reply)=>proxy(req,reply,true));api.setNotFoundHandler((req,reply)=>proxy(req,reply,false));
  return {credentials,get address(){return address;},get apiAddress(){return apiAddress;},publish(type,data){internal?.publish(type,data);},
- async start(){await mkdir(root,{recursive:true});try{db=JSON.parse(await readFile(authPath,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;if(typeof adminPassword!=='string'||adminPassword.length<12)throw Error('Initial administrator password must have 12 characters');const salt=random();db={salt,password:scryptSync(adminPassword,salt,32).toString('hex'),credentials:[]};await save();}
+ async start(){await mkdir(root,{recursive:true});try{db=JSON.parse(await readFile(authPath,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;if(browserPasswordRequired&&(typeof adminPassword!=='string'||adminPassword.length<12))throw Error('Initial administrator password must have 12 characters');const salt=random();db=browserPasswordRequired?{salt,password:scryptSync(adminPassword,salt,32).toString('hex'),credentials:[]}:{credentials:[]};await save();}
  internal=createLocalWebServer({version:runtime.identity.version,port:0,stateDir:root,assets,healthIdentity:{datasetId:runtime.identity.datasetId,platform:'fnos'},authenticateRequest:async req=>bridges.get(/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1])||null,dispatch:async(name,payload,context)=>{if(name==='getLocalAccess')return {origin:address,credentials:await credentials.list()};if(name==='openWeb')return {url:address};if(name==='createAiCredential')return credentials.create(payload);if(name==='revokeAiCredential'){if(db.credentials.find(c=>c.id===payload.id)?.owner)throw error(403,'FORBIDDEN');await credentials.revoke(payload.id);return {ok:true};}return runtime.dispatch(name,payload,context);}});await internal.start();
  await web.listen({host,port});address=origin||'http://'+(host==='::1'?'[::1]':host)+':'+web.server.address().port;
  await api.listen({host:apiHost,port:apiPort});apiAddress='http://'+(apiHost==='0.0.0.0'?'127.0.0.1':apiHost==='::1'?'[::1]':apiHost)+':'+api.server.address().port;

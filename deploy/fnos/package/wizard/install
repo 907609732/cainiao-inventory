@@ -7,15 +7,17 @@
         "field": "wizard_public_origin",
         "label": "浏览器访问地址（不带路径）",
         "initValue": "http://192.168.1.100:18761",
-        "rules": [{"required": true, "message": "填写实际 NAS IP 或反向代理地址，例如 http://192.168.1.100:18761"}]
+        "rules": [
+          {
+            "required": true,
+            "message": "填写实际 NAS IP 或反向代理地址，例如 http://192.168.1.100:18761"
+          }
+        ]
       },
       {
-        "type": "password",
-        "field": "wizard_admin_password",
-        "label": "设置云仓管理员密码（至少16位）",
-        "rules": [{"required": true, "message": "请设置此独立应用的管理员密码"}, {"min": 16, "max": 256, "message": "密码须为16至256位"}]
-      },
-      {"type": "tips", "helpText": "请先导入同次构建的 Docker 镜像；此密码只用于独立云仓，不是飞牛或 ERP 密码。数据始终保存在本应用私有目录。"}
+        "type": "tips",
+        "helpText": "请先导入同次构建的 Docker 镜像。无需额外管理员密码，浏览器可直接打开；数据保存在本应用私有目录，ERP API 仍使用独立凭据。"
+      }
     ]
   }
 ]

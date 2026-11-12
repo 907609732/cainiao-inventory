@@ -4,6 +4,23 @@ import {mkdtemp,rm,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
+test('NAS direct browser access needs no password while CSRF and API credentials remain required',async t=>{
+ const {createNasGateway}=await import('../nas/server/gateway.mjs');
+ const root=await mkdtemp(join(tmpdir(),'nas-direct-'));
+ const gateway=createNasGateway({runtime:{identity:{datasetId:'direct',version:'test'},dispatch:async()=>({ready:true})},root,browserPasswordRequired:false});
+ await gateway.start();t.after(async()=>{await gateway.stop();await rm(root,{recursive:true,force:true});});
+ const initial=await fetch(gateway.address+'/api/v1/session');assert.equal(initial.status,200);
+ const cookie=initial.headers.get('set-cookie').split(';')[0],{csrf}=await initial.json();assert.ok(csrf);
+ const call=(base,headers)=>fetch(base+'/api/v1/call/getInventory',{method:'POST',headers:{'content-type':'application/json',...headers},body:'{}'});
+ assert.equal((await call(gateway.address,{cookie,'x-csrf-token':csrf})).status,200);
+ assert.equal((await call(gateway.address,{cookie})).status,403);
+ assert.equal((await call(gateway.address,{cookie,'x-csrf-token':csrf,origin:'https://evil.invalid'})).status,403);
+ assert.equal((await call(gateway.apiAddress,{})).status,401);
+ const reader=await gateway.credentials.create();assert.equal((await call(gateway.apiAddress,{authorization:'Bearer '+reader.token})).status,200);
+ assert.equal((await fetch(gateway.address+'/login',{redirect:'manual'})).headers.get('location'),'/');
+ assert.equal(JSON.parse(await readFile(join(root,'nas-auth.json'),'utf8')).password,undefined);
+});
+
 test('NAS gateway protects browser, scopes service tasks and persists credential revocation',async t=>{
  const {createNasGateway}=await import('../nas/server/gateway.mjs');
  const root=await mkdtemp(join(tmpdir(),'nas-http-'));let calls=0;

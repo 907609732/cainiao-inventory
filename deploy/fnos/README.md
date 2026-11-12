@@ -1,16 +1,16 @@
 # 独立菜鸟云仓 fnOS 包
 
-应用 ID `cainiao-warehouse`，NAS 版本 `0.10.0`（Windows 版本保持原样）。目标 x86-64 fnOS + 已启用 Docker。当前文件为实施方案；必须等 GitHub 同次构建和真实 NAS 验收后才算可安装交付。
+应用 ID `cainiao-warehouse`，NAS 版本 `0.10.1`（Windows 版本保持原样）。目标 x86-64 fnOS + 已启用 Docker。当前文件为实施方案；必须等 GitHub 同次构建和真实 NAS 验收后才算可安装交付。
 
 ## 构建与安装
 
 GitHub `Independent fnOS package` 工作流生成一个私有 Actions artifact，含 `.fpk`、压缩 Docker image tar、SHA256SUMS、build.json（同次 commit/run）与 image-inspect.json；不推送镜像仓库、不发布 Release。镜像使用 Node24 + lockfile 对应 Chromium，完整 Linux 依赖均在镜像内，无需 NAS 系统安装 Node/Python/X 服务。
 
 1. 下载同一次 run 的完整 artifact，在暂存目录执行 `sha256sum --check SHA256SUMS`，核对 build.json 中 commit/run 与预期一致。
-2. 以 NAS 已授权管理员执行 `docker load --input cainiao-warehouse-0.10.0-image.tar.gz`。只导入此应用镜像，不接管其他容器。
+2. 以 NAS 已授权管理员执行 `docker load --input cainiao-warehouse-0.10.1-image.tar.gz`。只导入此应用镜像，不接管其他容器。
 3. 检查 `ss -ltn` 确认 18761、18762 未占用。fnOS 只替本应用检查主端口；API 端口须单独核对。
 4. 在 fnOS 应用中心手动安装同次 `.fpk`。fnOS Docker 项目资源负责启动、停止；首次由包用户创建自己的 `TRIM_PKGVAR/data`。镜像导入单独执行，使包账号不获得 root 或 docker 组权限。不要使用来源不明的同名镜像替代。
-5. 在安装向导确认实际浏览器访问地址并设置至少16位独立管理员密码，再访问对应地址登录。安装向导通过 fnOS 临时环境变量传递密码，生命周期脚本仅写入私有初始化文件，不记录日志；应用运行时不把密码、API key、会话放入环境变量或 URL。由 NAS runtime 负责首次消费密码后存储哈希；实际是否删除初始化文件须验收确认。
+5. 在安装向导确认实际浏览器访问地址，完成后可直接打开，无需额外管理员密码。ERP API 仍通过独立凭据访问；浏览器保留同源、Host、CSRF 和严格会话 Cookie 校验。请在可信内网使用此直接访问入口。
 
 尚未验证 fnOS 实机生命周期及安装 hook 中 TRIM_UID/TRIM_GID 的实际传递；若平台未向 Compose 传递，安装应失败，需在真实设备核查后修正，不能用 root 运行绕过。
 
