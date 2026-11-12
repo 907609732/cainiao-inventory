@@ -67,3 +67,5 @@ test('preinstall only validates; persistent initialization runs after fnOS creat
  const compose=await readFile(new URL('../deploy/fnos/package/app/docker/docker-compose.yaml',import.meta.url),'utf8');
  assert.match(compose,/\$\{TRIM_PKGVAR\}:\/data/);
 });
+
+test('fnOS desktop opens an embedded application window',async()=>{const entry=JSON.parse(await readFile(new URL('../deploy/fnos/package/app/ui/config',import.meta.url),'utf8'));assert.equal(entry['.url']['cainiao-warehouse.main'].type,'iframe');});

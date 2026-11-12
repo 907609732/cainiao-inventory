@@ -2,8 +2,29 @@
   {
     "stepTitle": "更新云仓访问地址",
     "items": [
-      {"type": "text", "field": "wizard_public_origin", "label": "浏览器访问地址（不带路径）", "initValue": "http://192.168.1.100:18761", "rules": [{"required": true, "message": "填写实际访问地址"}]},
-      {"type": "tips", "helpText": "保存后请停止并重新启动独立云仓；不会修改密码、ERP 或业务数据。"}
+      {
+        "type": "text",
+        "field": "wizard_public_origin",
+        "label": "浏览器访问地址（不带路径）",
+        "initValue": "http://192.168.1.100:18761",
+        "rules": [
+          {
+            "required": true,
+            "message": "填写实际访问地址"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_additional_origins",
+        "label": "额外访问地址（可选，多个用逗号分隔）",
+        "initValue": "",
+        "helpText": "填写飞牛分配给此应用的完整域名地址，例如 https://应用入口.你的设备.fnos.net；内网地址保持不变。"
+      },
+      {
+        "type": "tips",
+        "helpText": "保存后请停止并重新启动独立云仓；不会修改密码、ERP 或业务数据。"
+      }
     ]
   }
 ]

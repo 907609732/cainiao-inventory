@@ -112,3 +112,11 @@ CLI 显式 `collect-only --confirm-collect` 可执行真实采集、校验、入
 - 真实 LAN 页面可见 10 个小眼睛；分别点击菜鸟密码、钉钉 Client ID、Client Secret，验证已保存内容可显示，再次点击隐藏并清空按需读取内容。仅记录布尔结果，不记录真实密钥。
 - 没有重发未知回执任务，没有运行新的采集或通知发送。真实钉钉群发送未验收；修复通过真实 sendNotificationReport 校验及假 provider 回执测试验证。旧失败日志和审计记录保留。
 - 功能复用现有 Electron 安全存储、Fastify 会话、通知配置及发送实现，无新依赖。ERP 工作树、数据、原 Windows 配置未修改。
+
+## 0.10.4 飞牛内嵌入口与指定访问域名（进行中）
+
+用户在飞牛分配的应用域名看到 INVALID_HOST，且 url 类型入口另开标签影响 Grokbot 访问。根因是安装入口使用 url，网关只接受一个内网 origin。
+
+复用 fnOS 的 iframe 入口配置；通过安装/配置/升级向导显式声明额外完整 origin，持久写入本应用 additional-origins 文件。网关按请求 Host 精确匹配已配置 origin，校验同源请求，外部 HTTPS 会话设置 Secure Cookie；不信任客户端传入的 Forwarded Host，不开放任意域名。内网服务和仅宿主回环的 ERP API 保持原边界。可视浏览器 HTTP/WS 走相同域名匹配规则。
+
+参考 fnOS 入口字段说明：https://developer.fnnas.com/docs/core-concepts/app-entry/ 。原 ERP 的窗口与数据不修改。定时任务设置与库存需在升级后复核。

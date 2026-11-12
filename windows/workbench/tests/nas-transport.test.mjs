@@ -95,3 +95,13 @@ test('eye reveals only the selected field to CSRF-protected browser, never servi
  const reader=await gateway.credentials.create({write:true});assert.equal((await reveal(gateway.apiAddress,{authorization:'Bearer '+reader.token})).status,403);
  const {readdir}=await import('node:fs/promises');for(const f of await readdir(join(root,'local-web-tasks')))assert.ok(!(await readFile(join(root,'local-web-tasks',f),'utf8')).includes('eye-fixture-secret'));
 });
+
+test('NAS configured fnOS origin works without accepting arbitrary hosts or cross-origin calls',async t=>{
+ const {createNasGateway}=await import('../nas/server/gateway.mjs');const root=await mkdtemp(join(tmpdir(),'nas-alias-'));const alias='https://warehouse.example.test';const gateway=createNasGateway({runtime:{identity:{datasetId:'d',version:'t'},dispatch:async()=>({ready:true})},root,browserPasswordRequired:false,additionalOrigins:[alias]});await gateway.start();t.after(async()=>{await gateway.stop();await rm(root,{recursive:true,force:true});});
+ const http=await import('node:http');const request=(path,headers={},body)=>new Promise((resolve,reject)=>{const req=http.request(gateway.address+path,{method:body?'POST':'GET',headers:{host:'warehouse.example.test',...headers}},r=>{let text='';r.on('data',b=>text+=b);r.on('end',()=>resolve({status:r.statusCode,headers:r.headers,text}));});req.on('error',reject);req.end(body);});
+ const session=await request('/api/v1/session');assert.equal(session.status,200);assert.match(session.headers['set-cookie'][0],/Secure/);const cookie=session.headers['set-cookie'][0].split(';')[0],csrf=JSON.parse(session.text).csrf;
+ const result=await request('/api/v1/call/getLocalAccess',{'content-type':'application/json',cookie,'x-csrf-token':csrf,origin:alias},'{}');assert.equal(result.status,200);assert.equal(JSON.parse(result.text).value.origin,alias);
+ assert.equal((await request('/api/v1/session',{host:'evil.invalid'})).status,403);
+ assert.equal((await request('/api/v1/session',{origin:gateway.address})).status,403);
+ assert.equal((await fetch(gateway.address+'/api/v1/health')).status,200);
+});

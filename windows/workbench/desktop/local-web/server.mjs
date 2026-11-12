@@ -56,7 +56,7 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   if(name==='revealSecret'&&(ctx.kind!=='browser'||!ctx.write))throw fail(403,'FORBIDDEN');
   if(name==='revealSecret'&&!equal(req.headers['x-csrf-token'],ctx.csrf))throw fail(403,'CSRF_REQUIRED');
   if(name==='getEditableSecrets')return {ok:true,value:{}};
-  const context={kind:ctx.kind,id:ctx.id,write:ctx.write};
+  const context={kind:ctx.kind,id:ctx.id,write:ctx.write,...(ctx.origin?{origin:ctx.origin}:{})};
   const invoke=async()=>{const value=await dispatch(name,payload,context);if(name==='previewDateException'){const token=value?.token||value?.confirmationToken;if(token)previews.set(token,{identity:ctx.kind+':'+ctx.id,expires:Date.now()+120000});}return value;};
   if(!op.write)return {ok:true,value:await invoke()};
   const key=req.headers['idempotency-key'];if(typeof key!=='string'||!key.length||key.length>128)throw fail(400,'IDEMPOTENCY_REQUIRED');

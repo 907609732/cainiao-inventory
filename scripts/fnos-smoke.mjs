@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-const image = 'cainiao-warehouse:0.10.3';
+const image = 'cainiao-warehouse:0.10.4';
 const suffix = `${process.env.GITHUB_RUN_ID || process.pid}-${process.env.GITHUB_RUN_ATTEMPT || '1'}`;
 const name = `cainiao-warehouse-ci-${suffix}`, volume = `${name}-data`;
 const dynamicName = `${name}-dynamic-uid`;
@@ -28,10 +28,10 @@ async function recoveredAfter(restartCount) {
 }
 try {
   docker(['volume', 'create', volume], { capture: true });
-  docker(['run', '--rm', '-v', `${volume}:/data`, '--entrypoint', 'node', image, '--input-type=module', '-e', 'import fs from "node:fs"; for(const path of ["/data","/data/home","/data/home/.config","/data/home/.cache"]){if(fs.statSync(path).uid!==process.getuid())throw new Error("Image volume copied incorrect ownership");fs.accessSync(path,fs.constants.W_OK);}fs.writeFileSync("/data/public-origin","http://127.0.0.1:18761",{mode:0o600});']);
+  docker(['run', '--rm', '-v', `${volume}:/data`, '--entrypoint', 'node', image, '--input-type=module', '-e', 'import fs from "node:fs"; for(const path of ["/data","/data/home","/data/home/.config","/data/home/.cache"]){if(fs.statSync(path).uid!==process.getuid())throw new Error("Image volume copied incorrect ownership");fs.accessSync(path,fs.constants.W_OK);}fs.writeFileSync("/data/public-origin","http://127.0.0.1:18761",{mode:0o600});fs.writeFileSync("/data/additional-origins","https://warehouse.example.test",{mode:0o600});']);
   docker(['run', '-d', '--name', name, '--restart=unless-stopped', '--read-only', '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777,size=512m', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--shm-size=512m', '-v', `${volume}:/data`, '-e', 'CAINIAO_DATA_DIR=/data', '-e', 'CAINIAO_GATEWAY_HOST=0.0.0.0', '-e', 'CAINIAO_GATEWAY_PORT=18761', '-e', 'CAINIAO_API_HOST=0.0.0.0', '-e', 'CAINIAO_API_PORT=18762', '-e', 'CAINIAO_BROWSER_URL=http://127.0.0.1:6080', '-e', 'TZ=Asia/Shanghai', image], { capture: true });
   await healthy();
-  docker(['exec', name, 'node', '--input-type=module', '-e', 'const r=await fetch("http://127.0.0.1:18761/api/v1/session");if(r.status!==200||!(await r.json()).csrf)throw Error("Direct browser access failed");if((await fetch("http://127.0.0.1:18762/api/v1/call/getInventory",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).status!==401)throw Error("API credential gate missing");']);
+  docker(['exec', name, 'node', '--input-type=module', '-e', 'const alias=await fetch("http://127.0.0.1:18761/api/v1/session",{headers:{host:"warehouse.example.test"}});if(alias.status!==200||!alias.headers.get("set-cookie")?.includes("Secure"))throw Error("Configured fnOS alias failed");const r=await fetch("http://127.0.0.1:18761/api/v1/session");if(r.status!==200||!(await r.json()).csrf)throw Error("Direct browser access failed");if((await fetch("http://127.0.0.1:18762/api/v1/call/getInventory",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).status!==401)throw Error("API credential gate missing");']);
   const headedFixture = 'import fs from "node:fs";import {chromium} from "playwright";for(const key of ["XDG_CONFIG_HOME","XDG_CACHE_HOME"]){if(!process.env[key]?.startsWith("/data/home/"))throw new Error("Missing private writable browser directory");if(fs.statSync(process.env[key]).uid!==process.getuid())throw new Error("Browser directory owner mismatch");fs.accessSync(process.env[key],fs.constants.W_OK);}const browser=await chromium.launch({headless:false});try{const page=await browser.newPage();await page.setContent("<title>cainiao-headed-xvfb-fixture</title>");if(await page.title()!=="cainiao-headed-xvfb-fixture")throw new Error("Headed Xvfb browser fixture failed");}finally{await browser.close();}';
   docker(['exec', name, 'node', '--input-type=module', '-e', headedFixture]);
   // fnOS package UIDs need not exist in /etc/passwd. Give an arbitrary UID its

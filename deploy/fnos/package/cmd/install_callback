@@ -6,3 +6,15 @@ test -d "${TRIM_PKGVAR:?}"
 origin="${wizard_public_origin:?Public origin is required}"
 printf '%s' "$origin" > "$TRIM_PKGVAR/public-origin"
 chmod 600 "$TRIM_PKGVAR/public-origin"
+
+aliases="${wizard_additional_origins:-}"
+IFS=',' read -r -a origin_entries <<< "$aliases"
+for entry in "${origin_entries[@]}"; do
+  [ -z "$entry" ] && continue
+  if [[ ! "$entry" =~ ^https?://([A-Za-z0-9.-]+|\[[A-Fa-f0-9:]+\])(:[0-9]{1,5})?$ ]]; then
+    printf '%s\n' 'Invalid additional origin: use complete origins separated by commas.' > "${TRIM_TEMP_LOGFILE:?}"
+    exit 1
+  fi
+done
+printf '%s' "$aliases" > "${TRIM_PKGVAR:?}/additional-origins"
+chmod 600 "$TRIM_PKGVAR/additional-origins"

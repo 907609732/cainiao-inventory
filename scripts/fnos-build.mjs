@@ -25,7 +25,7 @@ for (const size of [64, 256]) {
   run('convert', [icon, '-resize', `${size}x${size}`, destination]);
   await copyFile(destination, path.join(project, `app/ui/images/icon_${size}.png`));
 }
-for (const hook of ['uninstall_callback', 'upgrade_callback', 'config_init']) {
+for (const hook of ['uninstall_callback', 'config_init']) {
   await writeFile(path.join(project, 'cmd', hook), '#!/bin/bash\nset -euo pipefail\nexit 0\n');
 }
 for (const file of await readdir(path.join(project, 'cmd'))) await chmod(path.join(project, 'cmd', file), 0o755);
@@ -34,9 +34,9 @@ await copyFile(path.join(root, 'LICENSE'), path.join(project, 'LICENSE'));
 run(fnpack, ['build'], project);
 const packages = (await readdir(project)).filter((file) => file.endsWith('.fpk'));
 if (packages.length !== 1) throw new Error('fnpack must produce exactly one FPK');
-await copyFile(path.join(project, packages[0]), path.join(out, 'cainiao-warehouse-0.10.3-x86.fpk'));
+await copyFile(path.join(project, packages[0]), path.join(out, 'cainiao-warehouse-0.10.4-x86.fpk'));
 const artifacts = (await readdir(out)).filter((file) => file.endsWith('.fpk') || file.endsWith('.tar.gz'));
 const sums = [];
 for (const file of artifacts) sums.push(`${createHash('sha256').update(await readFile(path.join(out, file))).digest('hex')}  ${file}`);
 await writeFile(path.join(out, 'SHA256SUMS'), `${sums.join('\n')}\n`);
-await writeFile(path.join(out, 'build.json'), JSON.stringify({ appId: 'cainiao-warehouse', version: '0.10.3', gitCommit: process.env.GITHUB_SHA || null, githubRunId: process.env.GITHUB_RUN_ID || null, node: process.version, playwright: JSON.parse(await readFile(path.join(root, 'windows/workbench/package-lock.json'))).packages['node_modules/playwright'].version, image: 'cainiao-warehouse:0.10.3' }, null, 2));
+await writeFile(path.join(out, 'build.json'), JSON.stringify({ appId: 'cainiao-warehouse', version: '0.10.4', gitCommit: process.env.GITHUB_SHA || null, githubRunId: process.env.GITHUB_RUN_ID || null, node: process.version, playwright: JSON.parse(await readFile(path.join(root, 'windows/workbench/package-lock.json'))).packages['node_modules/playwright'].version, image: 'cainiao-warehouse:0.10.4' }, null, 2));

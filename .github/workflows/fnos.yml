@@ -44,10 +44,10 @@ jobs:
           path: dist/fnos/*.fpk
           retention-days: 14
       - name: Build isolated Node 24 and exact lockfile Chromium image
-        run: docker build -f deploy/fnos/Dockerfile -t cainiao-warehouse:0.10.3 .
+        run: docker build -f deploy/fnos/Dockerfile -t cainiao-warehouse:0.10.4 .
       - name: Verify Chromium and Node sqlite as unprivileged runtime
         run: |
-          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges --entrypoint node cainiao-warehouse:0.10.3 --input-type=module -e '
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges --entrypoint node cainiao-warehouse:0.10.4 --input-type=module -e '
             import { chromium } from "playwright";
             import { DatabaseSync } from "node:sqlite";
             if (process.getuid() === 0) throw new Error("root runtime");
@@ -60,15 +60,15 @@ jobs:
             await browser.close(); db.close();'
       - name: Runtime transport and four-page browser checks inside Linux image
         run: |
-          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.3 --test tests/nas-runtime.test.mjs tests/nas-transport.test.mjs
-          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.3 tests/nas-ui.mjs
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.4 --test tests/nas-runtime.test.mjs tests/nas-transport.test.mjs
+          docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -v "$PWD/windows/workbench/tests:/app/windows/workbench/tests:ro" --entrypoint node cainiao-warehouse:0.10.4 tests/nas-ui.mjs
       - name: Real entrypoint restart and offline restore smoke
         run: node scripts/fnos-smoke.mjs
       - name: Save same-run image and provenance
         run: |
           mkdir -p dist/fnos
-          docker save cainiao-warehouse:0.10.3 | gzip > dist/fnos/cainiao-warehouse-0.10.3-image.tar.gz
-          docker image inspect cainiao-warehouse:0.10.3 > dist/fnos/image-inspect.json
+          docker save cainiao-warehouse:0.10.4 | gzip > dist/fnos/cainiao-warehouse-0.10.4-image.tar.gz
+          docker image inspect cainiao-warehouse:0.10.4 > dist/fnos/image-inspect.json
           (cd dist/fnos && sha256sum *.fpk *.tar.gz > SHA256SUMS)
       - name: Upload private same-run installation set
         uses: actions/upload-artifact@v4

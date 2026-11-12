@@ -1,0 +1,17 @@
+[
+  {
+    "stepTitle": "云仓访问入口",
+    "items": [
+      {
+        "type": "text",
+        "field": "wizard_additional_origins",
+        "label": "额外访问地址（可选，多个用逗号分隔）",
+        "initValue": ""
+      },
+      {
+        "type": "tips",
+        "helpText": "入口将在飞牛桌面窗口内打开。如使用飞牛域名，请填写该应用的完整 https 地址；留空保留已有域名配置。不修改账号、定时任务或业务数据。"
+      }
+    ]
+  }
+]

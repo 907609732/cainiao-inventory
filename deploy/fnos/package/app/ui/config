@@ -1,1 +1,1 @@
-{".url":{"cainiao-warehouse.main":{"title":"菜鸟云仓","icon":"images/icon_{0}.png","type":"url","protocol":"http","port":"18761","url":"/","allUsers":true}}}
+{".url":{"cainiao-warehouse.main":{"title":"菜鸟云仓","icon":"images/icon_{0}.png","type":"iframe","protocol":"http","port":"18761","url":"/","allUsers":true}}}
