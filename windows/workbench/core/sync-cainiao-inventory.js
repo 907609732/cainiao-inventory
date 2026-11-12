@@ -1,4 +1,5 @@
 import {sendNotificationReport,notificationEnvironment} from './notifications.js';
+import {deliverInventoryReport} from './inventory-delivery.mjs';
 import { chromium } from 'playwright';
 import { browserLaunchOptions } from './browser-launch.js';
 import fs from 'fs';
@@ -625,17 +626,14 @@ async function synchronizeInventory(daily, runId) {
 
   // 5. 发送钉钉
   console.log('\n📤 发送通知消息...');
-  daily.updateRun(runId,{deliveryStatus:'unknown'});
-  const markdown = buildInventoryMarkdown('table');
   const sendReport = process.env.WAREHOUSE_NOTIFICATION_CONFIG ? async payload => sendNotificationReport({...payload,...notificationEnvironment()}) : sendInventoryDingTalkMarkdown;
-  const dingResult = await sendReport({
+  const dingResult = await deliverInventoryReport({
+    collectOnly:process.env.CAINIAO_COLLECT_ONLY==='1',daily,runId,sendReport,isAccepted:inventoryDeliveryAccepted,
+    buildReport:()=>{const markdown=buildInventoryMarkdown('table');return {
     title: markdown.title,
     text: markdown.shouldNotify ? markdown.text : `### 云仓每日同步完成\n\n来源日期：${validation.sourceDate}\n\n已采集并校验入库 ${validation.rowCount} 个 SKU，库存合计 ${validation.totalQuantity}。当前无严重缺货预警，请负责人在菜鸟云仓中核对。`,
     shouldNotify: true,
-  });
-  const accepted=dingResult?.channels ? dingResult.accepted : inventoryDeliveryAccepted(dingResult);
-  daily.updateRun(runId, {deliveryStatus:dingResult?.skipped?'skipped':accepted?'accepted':'unknown',...(accepted?{sentAt:new Date().toISOString()}:{}),deliveryReceipt:JSON.stringify(dingResult).slice(0,2000)});
-  if(!accepted&&!dingResult?.skipped)throw Error('通知渠道未全部确认受理，请检查各渠道的服务商发送记录');
+  };}});
   if(dingResult?.channels) for(const [channel,result] of Object.entries(dingResult.channels)) console.log('通知 '+channel+'：'+result.status);
   console.log('✅ 通知发送结果:', dingResult);
 
