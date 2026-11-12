@@ -6,6 +6,10 @@ on:
         description: Successful installer acceptance run
         required: true
         type: string
+      fnos_run_id:
+        description: Optional successful same-commit fnOS package run
+        required: false
+        type: string
 permissions:
   actions: read
   contents: write
@@ -17,6 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.run_id }}
+          FNOS_RUN_ID: ${{ inputs.fnos_run_id }}
           REPO: ${{ github.repository }}
         shell: bash
         run: |
@@ -38,3 +43,14 @@ jobs:
           gh release view "v$version" --repo "$REPO" --json isDraft --jq .isDraft | grep -qx true
           gh release upload "v$version" "release/$file" "release/$file.blockmap" release/latest.yml --repo "$REPO" --clobber
           sha256sum "release/$file"
+          if [[ -n "$FNOS_RUN_ID" ]]; then
+            [[ "$FNOS_RUN_ID" =~ ^[0-9]+$ ]]
+            gh api "repos/$REPO/actions/runs/$FNOS_RUN_ID" > fnos-run.json
+            jq -e '.conclusion == "success" and .name == "Independent fnOS package"' fnos-run.json
+            test "$(jq -r .head_sha run.json)" = "$(jq -r .head_sha fnos-run.json)"
+            gh run download "$FNOS_RUN_ID" --repo "$REPO" --name "cainiao-warehouse-fnos-$FNOS_RUN_ID" --dir fnos
+            test "$(jq -r .gitCommit fnos/dist/fnos/build.json)" = "$(jq -r .head_sha run.json)"
+            test "$(jq -r .version fnos/dist/fnos/build.json)" = "$version"
+            (cd fnos/dist/fnos && sha256sum --check SHA256SUMS)
+            gh release upload "v$version" "fnos/dist/fnos/cainiao-warehouse-$version-x86.fpk" "fnos/dist/fnos/cainiao-warehouse-$version-image.tar.gz" --repo "$REPO" --clobber
+          fi
