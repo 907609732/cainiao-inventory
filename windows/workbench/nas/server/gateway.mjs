@@ -31,9 +31,10 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
  const save=()=>{const content=JSON.stringify(db);saveQueue=saveQueue.then(async()=>{await writeFile(authPath+'.tmp',content,{mode:0o600});await rename(authPath+'.tmp',authPath);});return saveQueue;};
  const credentials={
   async create({write=false}={}){const id=randomUUID(),token=random();db.credentials.push({id,digest:hash(token),write:write===true});await save();return {id,token,write:write===true};},
+  async createLocalOwner(){const id=randomUUID(),token=random();db.credentials.push({id,digest:hash(token),write:true,owner:true});await save();return {id,token,write:true};},
   async rotate(id){const item=db.credentials.find(c=>c.id===id);if(!item)throw Error('Credential not found');const token=random();item.digest=hash(token);await save();return {id,token,write:item.write};},
   async revoke(id){db.credentials=db.credentials.filter(c=>c.id!==id);await save();},
-  async list(){return db.credentials.map(({id,write})=>({id,write}));}
+  async list(){return db.credentials.filter(c=>!c.owner).map(({id,write})=>({id,write}));}
  };
  const session=req=>{const s=sessions.get(req.cookies?.nas_session);return s&&s.expires>Date.now()?s:null;};
  const configure=(app,isWeb)=>{
@@ -81,19 +82,20 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
  async function proxy(req,reply,isWeb){
   let ctx;
   if(isWeb){const s=session(req);if(!s){if(!req.url.startsWith('/api/'))return reply.redirect('/login');throw error(401,'UNAUTHORIZED');}if(req.method==='POST'&&!equal(req.headers['x-csrf-token'],s.csrf))throw error(403,'CSRF_REQUIRED');ctx={kind:'browser',id:'nas-admin',write:true,csrf:s.csrf};}
-  else {if(!req.url.startsWith('/api/v1/call/')&&!req.url.startsWith('/api/v1/tasks/'))throw error(404,'NOT_FOUND');const token=/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1],c=token&&db.credentials.find(c=>equal(c.digest,hash(token)));if(!c)throw error(401,'UNAUTHORIZED');ctx={kind:'ai',id:c.id,write:c.write};}
+  else {if(!req.url.startsWith('/api/v1/call/')&&!req.url.startsWith('/api/v1/tasks/'))throw error(404,'NOT_FOUND');const token=/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1],c=token&&db.credentials.find(c=>equal(c.digest,hash(token)));if(!c)throw error(401,'UNAUTHORIZED');ctx={kind:c.owner?'owner':'ai',id:c.id,write:c.write};}
   const bridge=random();bridges.set(bridge,ctx);
   try{const response=await fetch(internal.address+req.url,{method:req.method,headers:{authorization:'Bearer '+bridge,...(req.method==='POST'?{'content-type':'application/json','x-csrf-token':ctx.csrf||'','idempotency-key':req.headers['idempotency-key']||''}:{})},...(req.method==='POST'?{body:JSON.stringify(req.body)}:{}),redirect:'manual'});reply.code(response.status);reply.type(response.headers.get('content-type')||'application/octet-stream');const bytes=Buffer.from(await response.arrayBuffer());return reply.send(isWeb&&req.url==='/'?bytes.toString().replace('<script src="renderer.js">','<script src="nas-ui-adapter.js"></script><script src="renderer.js">'):bytes);}finally{bridges.delete(bridge);}
  }
  web.setNotFoundHandler((req,reply)=>proxy(req,reply,true));api.setNotFoundHandler((req,reply)=>proxy(req,reply,false));
  return {credentials,get address(){return address;},get apiAddress(){return apiAddress;},publish(type,data){internal?.publish(type,data);},
  async start(){await mkdir(root,{recursive:true});try{db=JSON.parse(await readFile(authPath,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;if(typeof adminPassword!=='string'||adminPassword.length<12)throw Error('Initial administrator password must have 12 characters');const salt=random();db={salt,password:scryptSync(adminPassword,salt,32).toString('hex'),credentials:[]};await save();}
- internal=createLocalWebServer({version:runtime.identity.version,port:0,stateDir:root,assets,healthIdentity:{datasetId:runtime.identity.datasetId,platform:'fnos'},authenticateRequest:async req=>bridges.get(/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1])||null,dispatch:async(name,payload,context)=>{if(name==='getLocalAccess')return {origin:address,credentials:await credentials.list()};if(name==='openWeb')return {url:address};if(name==='createAiCredential')return credentials.create(payload);if(name==='revokeAiCredential'){await credentials.revoke(payload.id);return {ok:true};}return runtime.dispatch(name,payload,context);}});await internal.start();
+ internal=createLocalWebServer({version:runtime.identity.version,port:0,stateDir:root,assets,healthIdentity:{datasetId:runtime.identity.datasetId,platform:'fnos'},authenticateRequest:async req=>bridges.get(/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1])||null,dispatch:async(name,payload,context)=>{if(name==='getLocalAccess')return {origin:address,credentials:await credentials.list()};if(name==='openWeb')return {url:address};if(name==='createAiCredential')return credentials.create(payload);if(name==='revokeAiCredential'){if(db.credentials.find(c=>c.id===payload.id)?.owner)throw error(403,'FORBIDDEN');await credentials.revoke(payload.id);return {ok:true};}return runtime.dispatch(name,payload,context);}});await internal.start();
  await web.listen({host,port});address=origin||'http://'+(host==='::1'?'[::1]':host)+':'+web.server.address().port;
  await api.listen({host:apiHost,port:apiPort});apiAddress='http://'+(apiHost==='0.0.0.0'?'127.0.0.1':apiHost==='::1'?'[::1]':apiHost)+':'+api.server.address().port;
  if(runtime.subscribe)unsubscribe=runtime.subscribe((type,data)=>typeof type==='string'?internal.publish(type,data):internal.publish(type.type,type.data));return address;},
  async stop(){unsubscribe?.();for(const client of sockets.clients)client.terminate();sockets.close();await Promise.all([web.close(),api.close()]);await internal?.stop();await saveQueue;}
  };
 }
+
 
 

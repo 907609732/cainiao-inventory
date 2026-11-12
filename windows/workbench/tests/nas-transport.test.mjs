@@ -58,3 +58,12 @@ test('NAS API wildcard bind accepts only advertised loopback host',async t=>{
  const {createNasGateway}=await import('../nas/server/gateway.mjs');const root=await mkdtemp(join(tmpdir(),'nas-host-'));const gateway=createNasGateway({runtime:{identity:{datasetId:'d',version:'t'},dispatch:async()=>null},root,adminPassword:'long-test-password',apiHost:'0.0.0.0'});await gateway.start();t.after(async()=>{await gateway.stop();await rm(root,{recursive:true,force:true});});assert.match(gateway.apiAddress,/127\.0\.0\.1/);assert.equal((await fetch(gateway.apiAddress+'/api/v1/health')).status,200);assert.equal(await new Promise(async resolve=>{const http=await import('node:http');http.get(gateway.apiAddress+'/api/v1/health',{headers:{host:'evil.invalid'}},r=>{r.resume();resolve(r.statusCode);});}),403);
 });
 
+
+test('private CLI owner is not exposed or obtainable through browser credential creation',async t=>{
+ const {createNasGateway}=await import('../nas/server/gateway.mjs');const root=await mkdtemp(join(tmpdir(),'nas-owner-'));const gateway=createNasGateway({runtime:{identity:{datasetId:'d',version:'t'},dispatch:async(name,payload,context)=>({name,context})},root,adminPassword:'long-test-password'});await gateway.start();t.after(async()=>{await gateway.stop();await rm(root,{recursive:true,force:true});});
+ const owner=await gateway.credentials.createLocalOwner();assert.deepEqual(await gateway.credentials.list(),[]);
+ const call=(base,name,headers,payload)=>fetch(base+'/api/v1/call/'+name,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(payload)});
+ const result=await (await call(gateway.apiAddress,'executeCli',{authorization:'Bearer '+owner.token},{request:{command:'status'}})).json();assert.equal(result.value.context.kind,'owner');
+ const reader=await gateway.credentials.create();assert.equal((await call(gateway.apiAddress,'executeCli',{authorization:'Bearer '+reader.token},{request:{command:'status'}})).status,403);
+ const login=await fetch(gateway.address+'/api/v1/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:'long-test-password'})});const cookie=login.headers.get('set-cookie').split(';')[0],{csrf}=await login.json();assert.equal((await call(gateway.address,'createAiCredential',{cookie,'x-csrf-token':csrf,'idempotency-key':'owner-injection'},{write:true,owner:true})).status,400);
+});
