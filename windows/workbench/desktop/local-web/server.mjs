@@ -44,7 +44,7 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
  });
  app.get('/api/v1/session',async req=>{const ctx=await authenticate(req);if(ctx.kind!=='browser')throw fail(403,'FORBIDDEN');return {csrf:ctx.csrf};});
  app.get('/api/v1/events',async req=>{await authenticate(req);const after=Number(req.query.after||0);if(!Number.isSafeInteger(after)||after<0)throw fail(400,'INVALID_CURSOR');return {cursor,events:events.filter(e=>e.cursor>after)};});
- app.get('/api/v1/tasks/:id',async req=>{const ctx=await authenticate(req);const receipt=receipts.get(req.params.id);if(!receipt||receipt.identity!==ctx.kind+':'+ctx.id)throw fail(404,'NOT_FOUND');return {ok:true,value:{taskId:receipt.taskId,status:receipt.status,...(receipt.status==='succeeded'?{value:receipt.value}:{}),...(receipt.status==='failed'?{error:{code:'TASK_FAILED',message:'Task failed'}}:{})}};});
+ app.get('/api/v1/tasks/:id',async req=>{const ctx=await authenticate(req);const receipt=receipts.get(req.params.id);if(!receipt||receipt.identity!==ctx.kind+':'+ctx.id)throw fail(404,'NOT_FOUND');return {ok:true,value:{taskId:receipt.taskId,status:receipt.status,...(receipt.status==='succeeded'?{value:receipt.value}:{}),...(['failed','unknown'].includes(receipt.status)?{error:{code:receipt.status==='unknown'?'TASK_UNKNOWN':'TASK_FAILED',message:receipt.status==='unknown'?'Task outcome unknown; check provider records':'Task failed'}}:{})}};});
  app.post('/api/v1/call/:operation',async(req,reply)=>{
   const ctx=await authenticate(req),name=req.params.operation,payload=req.body??{},op=operationPolicy(name,payload);
   if(!op)throw fail(404,'UNKNOWN_OPERATION');
@@ -65,7 +65,15 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
    const token=payload.token||payload.confirmationToken;const preview=previews.get(token);if(!preview||preview.identity!==identity||preview.expires<Date.now())throw fail(403,'INVALID_PREVIEW');
   }
   const receipt={taskId,identity,fingerprint,status:'running',sensitive:name==='createAiCredential'};receipts.set(taskId,receipt);await persist(receipt);
-  const finish=async()=>{try{receipt.value=await invoke();if(receipt.value?.success===false||receipt.value?.ok===false)throw Error('Business task failed');receipt.status='succeeded';if(!op.task)receipt.response={ok:true,value:receipt.value};}catch{receipt.status='failed';if(!op.task)receipt.response={ok:false,error:{code:'TASK_FAILED',message:'Task failed'}};}await persist(receipt);};
+  const finish=async()=>{try{
+   receipt.value=await invoke();
+   const value=receipt.value,states=value?.accepted===false&&value.channels&&typeof value.channels==='object'?Object.values(value.channels).map(channel=>channel?.status):null;
+   if(value?.unknown===true||(states&&(!states.length||!states.every(status=>status==='failed'))))receipt.status='unknown';
+   else if(states||value?.success===false||value?.ok===false)receipt.status='failed';
+   else receipt.status='succeeded';
+   if(receipt.status==='unknown')receipt.response={ok:true,value:{taskId,status:'unknown'}};
+   else if(!op.task)receipt.response=receipt.status==='succeeded'?{ok:true,value:receipt.value}:{ok:false,error:{code:'TASK_FAILED',message:'Task failed'}};
+  }catch{receipt.status='failed';if(!op.task)receipt.response={ok:false,error:{code:'TASK_FAILED',message:'Task failed'}};}await persist(receipt);};
   if(op.task){receipt.response={ok:true,value:{taskId,status:'running'}};await persist(receipt);void finish().catch(()=>{receipt.status='unknown';});return receipt.response;}
   await finish();return receipt.response;
  });
@@ -78,4 +86,5 @@ export function createLocalWebServer({version,port=17891,instanceId=random(),own
   get address(){return origin;}
  };
 }
+
 

@@ -92,3 +92,18 @@ test('one-time AI credentials never enter durable receipt files',async t=>{
  server=createLocalWebServer(options);origin=await server.start();
  assert.equal((await (await call()).json()).value.status,'unknown');
 });
+
+test('delivery receipts preserve unknown and failed channel outcomes across restart without resending',async t=>{
+ const dir=await mkdtemp(join(tmpdir(),'warehouse-delivery-'));let count=0;
+ const options={version:'test',port:0,stateDir:dir,ownerToken:'owner',dispatch:async(op,payload)=>{count++;return payload.request.result;}};
+ let server=createLocalWebServer(options),origin=await server.start();t.after(async()=>{await server.stop();await rm(dir,{recursive:true,force:true});});
+ const cases=[{result:{accepted:false,channels:{email:{status:'unknown'}}},status:'unknown'},{result:{accepted:false,channels:{email:{status:'failed'}}},status:'failed'},{result:{accepted:true,channels:{email:{status:'accepted'}}},status:'succeeded'},{result:{success:false,unknown:true,deliveryStatus:'unknown'},status:'unknown'},{result:{accepted:false,channels:{email:{status:'accepted'},sms:{status:'failed'}}},status:'unknown'}];
+ const call=(index)=>fetch(origin+'/api/v1/call/executeCli',{method:'POST',headers:{authorization:'Bearer owner','content-type':'application/json','idempotency-key':'delivery-'+index},body:JSON.stringify({request:{command:'sync',result:cases[index].result}})});
+ for(const [index,item]of cases.entries()){
+  const start=await (await call(index)).json();let task;
+  for(let n=0;n<50;n++){task=await (await fetch(origin+'/api/v1/tasks/'+start.value.taskId,{headers:{authorization:'Bearer owner'}})).json();if(task.value.status!=='running')break;await new Promise(r=>setTimeout(r,10));}
+  assert.equal(task.value.status,item.status);if(item.status!=='succeeded')assert.ok(task.value.error?.code);
+ }
+ await server.stop();server=createLocalWebServer(options);origin=await server.start();assert.equal((await (await call(0)).json()).value.status,'unknown');assert.equal(count,cases.length);
+});
+
