@@ -495,7 +495,13 @@ export function buildInventoryMarkdown(format = "grouped", reportOverride = null
     const days = Number.isFinite(item.sellableDays) ? Math.round(item.sellableDays) : "N/A";
     // 钉钉消息宽度有限：只缩短显示名称，不修改库存原始数据或 SKU。
     const nameChars = Array.from(String(item.name || "—").replace(/[\r\n]+/g, " "));
-    const displayName = nameChars.length > 8 ? nameChars.slice(0, 8).join("") + "…" : nameChars.join("");
+    let displayName = "", displayWidth = 0;
+    for (const char of nameChars) {
+      const width = /[\x00-\x7f]/.test(char) ? 1 : 2;
+      if (displayWidth + width > 16) { displayName += "…"; break; }
+      displayName += char;
+      displayWidth += width;
+    }
     const productName = displayName.replace(/\|/g, "\\|");
     return "| " + productName + " | " + item.sku + " | " + item.totalQuantity + " / " + (item.near30DaysSales || 0) + " | " + days + " | " + formatInventoryAlertLabel(item.stockAlert.level) + " |";
   });
