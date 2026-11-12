@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {spawnSync,spawn} from 'node:child_process';
 import {_electron} from 'playwright';
 process.chdir(path.resolve(import.meta.dirname,'..'));
+const expectedVersion=JSON.parse(fs.readFileSync('package.json','utf8')).version;
 const profile=fs.mkdtempSync(path.join(os.tmpdir(),'cainiao-web-ui-'));
 const env={...process.env};
 for(const key of Object.keys(env))if(/^(LINGTU_|ERP_|CAINIAO_|DINGTALK_)/.test(key)||key==='ELECTRON_RUN_AS_NODE')delete env[key];
@@ -37,7 +38,7 @@ try{
  const webWindow=app.waitForEvent('window');
  await app.evaluate(({BrowserWindow},url)=>{globalThis.webTestWindow=new BrowserWindow({show:false,webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true}});globalThis.webTestWindow.loadURL(url);},url);
  const web=await webWindow;
- await web.waitForFunction(()=>document.querySelector('#aboutVersion')?.textContent.includes('0.9.'));
+ await web.waitForFunction(version=>document.querySelector('#aboutVersion')?.textContent.trim() === 'v'+version,expectedVersion);
  for(const view of ['dashboard','inventory','sales','settings']){
   await web.locator(`.view-tab[data-view="${view}"]`).click();
   await web.locator(`[data-view-panel="${view}"]`).waitFor({state:'visible'});
@@ -60,7 +61,7 @@ try{
  assert.equal(api.status,200);
  const denied=await fetch(access.origin+'/api/v1/call/runNow',{method:'POST',headers:{authorization:'Bearer '+token.token,'content-type':'application/json','idempotency-key':'readonly-attempt'},body:JSON.stringify({confirmed:true})});
  assert.equal(denied.status,403);
- await web.reload();await web.waitForFunction(()=>document.querySelector('#aboutVersion')?.textContent.includes('0.9.'));
+ await web.reload();await web.waitForFunction(version=>document.querySelector('#aboutVersion')?.textContent.trim() === 'v'+version,expectedVersion);
  assert.equal(JSON.parse(fs.readFileSync(path.join(profile,'workspace/state/local-web.json'),'utf8')).pid,pid);
  await web.evaluate(id=>window.inventoryApp.revokeAiCredential({id,confirmed:true}),token.id);
  assert.equal((await fetch(access.origin+'/api/v1/call/getInventory',{method:'POST',headers:{authorization:'Bearer '+token.token,'content-type':'application/json'},body:'{}'})).status,401);
