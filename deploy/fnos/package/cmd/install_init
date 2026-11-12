@@ -1,5 +1,7 @@
 #!/bin/bash
-set -euo pipefail
+set -Eeuo pipefail
+stage=port-check
+trap 'code=$?; printf "Cloud warehouse installation failed at %s (exit %s).\n" "$stage" "$code" > "${TRIM_TEMP_LOGFILE:-/dev/stderr}"; exit "$code"' ERR
 umask 077
 for port in 18761 18762; do
   if timeout 1 bash -c "exec 3<>/dev/tcp/127.0.0.1/$port" >/dev/null 2>&1; then
@@ -7,9 +9,15 @@ for port in 18761 18762; do
     exit 1
   fi
 done
+stage=private-data-directory
 mkdir -p "${TRIM_PKGVAR:?}/data"
 chmod 700 "$TRIM_PKGVAR/data"
-origin="${wizard_public_origin:?Public origin is required}"
+stage=wizard-origin
+origin="${wizard_public_origin:-}"
+if [ -z "$origin" ]; then
+  printf "%s\n" "Cloud warehouse install_init did not receive wizard_public_origin." > "${TRIM_TEMP_LOGFILE:-/dev/stderr}"
+  exit 1
+fi
 if [[ ! "$origin" =~ ^https?://([A-Za-z0-9.-]+|\[[A-Fa-f0-9:]+\])(:[0-9]{1,5})?$ ]]; then
   printf '%s\n' 'Invalid public origin: scheme and host only, no path or credentials.' > "${TRIM_TEMP_LOGFILE:?}"
   exit 1
