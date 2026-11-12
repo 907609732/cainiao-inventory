@@ -35,7 +35,7 @@ test('package exposes gateway and host-loopback API only, isolates data and drop
   assert.match(compose, /127\.0\.0\.1:18762:18762/);
   assert.match(compose, /18761:18761/);
   assert.doesNotMatch(compose, /docker\.sock|privileged: true|network_mode: host|5900:|6080:/);
-  assert.match(compose, /\$\{TRIM_PKGVAR\}\/data:\/data/);
+  assert.match(compose, /\$\{TRIM_PKGVAR\}:\/data/);
   assert.match(compose, /no-new-privileges/);
   assert.match(compose, /cap_drop: \[ALL\]/);
 });
@@ -56,4 +56,14 @@ test('Linux backup distinguishes live process owner from reused namespace PID', 
     await backupData({ source, destination: path.join(dir, 'stale'), serviceStopped: true });
     assert.equal(JSON.parse(await readFile(path.join(dir, 'stale', 'backup.json'))).datasetId, 'dataset-a');
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+// fnOS creates the package data directory after install_init.
+test('preinstall only validates; persistent initialization runs after fnOS creates its private directory',async()=>{
+ const before=await readFile(new URL('../deploy/fnos/package/cmd/install_init',import.meta.url),'utf8');
+ assert.doesNotMatch(before,/mkdir|chmod|\$TRIM_PKGVAR/);
+ const after=await readFile(new URL('../deploy/fnos/package/cmd/install_callback',import.meta.url),'utf8');
+ assert.match(after,/public-origin/);
+ const compose=await readFile(new URL('../deploy/fnos/package/app/docker/docker-compose.yaml',import.meta.url),'utf8');
+ assert.match(compose,/\$\{TRIM_PKGVAR\}:\/data/);
 });

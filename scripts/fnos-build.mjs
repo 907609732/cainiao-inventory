@@ -25,7 +25,7 @@ for (const size of [64, 256]) {
   run('convert', [icon, '-resize', `${size}x${size}`, destination]);
   await copyFile(destination, path.join(project, `app/ui/images/icon_${size}.png`));
 }
-for (const hook of ['install_callback', 'uninstall_callback', 'upgrade_callback', 'config_init']) {
+for (const hook of ['uninstall_callback', 'upgrade_callback', 'config_init']) {
   await writeFile(path.join(project, 'cmd', hook), '#!/bin/bash\nset -euo pipefail\nexit 0\n');
 }
 for (const file of await readdir(path.join(project, 'cmd'))) await chmod(path.join(project, 'cmd', file), 0o755);

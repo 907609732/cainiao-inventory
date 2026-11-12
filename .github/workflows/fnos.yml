@@ -26,6 +26,23 @@ jobs:
           node --test tests/nas-package.test.mjs
           bash -n deploy/fnos/entrypoint.sh deploy/fnos/package/cmd/*
           TRIM_UID=1000 TRIM_GID=1000 TRIM_PKGVAR=/tmp/cainiao-warehouse docker compose -f deploy/fnos/package/app/docker/docker-compose.yaml config --quiet
+      - name: Install checksum-verified official fnpack
+        run: |
+          curl --fail --location --silent --show-error https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 --output "$RUNNER_TEMP/fnpack"
+          echo "72d2a4095da676b64510b023731a227b369d80f8079bc45ff8a2f802ec0480c1  $RUNNER_TEMP/fnpack" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/fnpack"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends imagemagick
+      - name: Assemble native fnOS FPK
+        env:
+          FNPACK: ${{ runner.temp }}/fnpack
+        run: node scripts/fnos-build.mjs
+      - name: Upload small native installer for installation diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: cainiao-warehouse-fpk-${{ github.run_id }}
+          path: dist/fnos/*.fpk
+          retention-days: 14
       - name: Build isolated Node 24 and exact lockfile Chromium image
         run: docker build -f deploy/fnos/Dockerfile -t cainiao-warehouse:0.10.1 .
       - name: Verify Chromium and Node sqlite as unprivileged runtime
@@ -52,17 +69,6 @@ jobs:
           mkdir -p dist/fnos
           docker save cainiao-warehouse:0.10.1 | gzip > dist/fnos/cainiao-warehouse-0.10.1-image.tar.gz
           docker image inspect cainiao-warehouse:0.10.1 > dist/fnos/image-inspect.json
-      - name: Install checksum-verified official fnpack
-        run: |
-          curl --fail --location --silent --show-error https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 --output "$RUNNER_TEMP/fnpack"
-          echo "72d2a4095da676b64510b023731a227b369d80f8079bc45ff8a2f802ec0480c1  $RUNNER_TEMP/fnpack" | sha256sum --check
-          chmod 755 "$RUNNER_TEMP/fnpack"
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends imagemagick
-      - name: Assemble native fnOS FPK
-        env:
-          FNPACK: ${{ runner.temp }}/fnpack
-        run: node scripts/fnos-build.mjs
       - name: Upload private same-run installation set
         uses: actions/upload-artifact@v4
         with:

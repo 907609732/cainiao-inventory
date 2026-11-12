@@ -1,0 +1,8 @@
+#!/bin/bash
+set -Eeuo pipefail
+umask 077
+trap 'code=$?; printf "Cloud warehouse post-install initialization failed (exit %s).\n" "$code" > "${TRIM_TEMP_LOGFILE:-/dev/stderr}"; exit "$code"' ERR
+test -d "${TRIM_PKGVAR:?}"
+origin="${wizard_public_origin:?Public origin is required}"
+printf '%s' "$origin" > "$TRIM_PKGVAR/public-origin"
+chmod 600 "$TRIM_PKGVAR/public-origin"

@@ -1,4 +1,4 @@
 #!/bin/bash
 set -euo pipefail
 # Keep the entire persistent directory including dataset identity and keys.
-test -d "${TRIM_PKGVAR:?}/data"
+test -d "${TRIM_PKGVAR:?}"

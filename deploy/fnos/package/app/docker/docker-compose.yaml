@@ -30,7 +30,7 @@ services:
       TZ: Asia/Shanghai
       BUSINESS_TIME_ZONE: Asia/Shanghai
     volumes:
-      - "${TRIM_PKGVAR}/data:/data"
+      - "${TRIM_PKGVAR}:/data"
     logging:
       driver: json-file
       options:

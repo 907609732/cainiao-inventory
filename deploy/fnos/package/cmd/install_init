@@ -9,9 +9,6 @@ for port in 18761 18762; do
     exit 1
   fi
 done
-stage=private-data-directory
-mkdir -p "${TRIM_PKGVAR:?}/data"
-chmod 700 "$TRIM_PKGVAR/data"
 stage=wizard-origin
 origin="${wizard_public_origin:-}"
 if [ -z "$origin" ]; then
@@ -22,6 +19,3 @@ if [[ ! "$origin" =~ ^https?://([A-Za-z0-9.-]+|\[[A-Fa-f0-9:]+\])(:[0-9]{1,5})?$
   printf '%s\n' 'Invalid public origin: scheme and host only, no path or credentials.' > "${TRIM_TEMP_LOGFILE:?}"
   exit 1
 fi
-printf '%s' "$origin" > "$TRIM_PKGVAR/data/public-origin"
-# Image is imported separately by the authorized NAS administrator. The package
-# account does not receive docker-group membership or host root permissions.
