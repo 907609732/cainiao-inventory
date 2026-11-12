@@ -52,7 +52,7 @@ Alerts use unrounded coverage, while displayed days are rounded:
 
 Daily sales use recent 30-day sales divided by 30, falling back to monthly outbound quantity divided by 30. Without a usable reference, coverage is shown as a dash. These colors cannot be explained solely by the quantity threshold in settings.
 
-Notification reports in 0.10.5 shorten displayed names to roughly eight Chinese characters or sixteen ASCII characters with an ellipsis. Full inventory names, SKUs and alert values remain intact.
+Notification reports in 0.10.6 retain full names and wrap at roughly twelve Chinese characters or twenty-four ASCII characters of display width. The stock-coverage header uses two lines. DingTalk SKU and stock/sales cells use smaller text without truncating digits or alerts. Actual DingTalk client rendering remains unverified; the application screenshots here are from the 0.10.5 source demo.
 
 ## Sales trends
 

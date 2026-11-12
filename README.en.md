@@ -4,17 +4,17 @@
 
 [**Releases · Downloads**](https://github.com/907609732/cainiao-inventory/releases)
 
-Cainiao Cloud Warehouse is an independent inventory application for **Windows x64** and **fnOS x86-64**. It does not require an ERP or the former e-commerce workbench. The current stable release is **0.10.5**.
+Cainiao Cloud Warehouse is an independent inventory application for **Windows x64** and **fnOS x86-64**. It does not require an ERP or the former e-commerce workbench. The current stable release is **0.10.6**.
 
 > Versions 0.9.3 and 0.9.4 were withdrawn because their installation identity conflicted with the old workbench. Do not install them or run their uninstallers on a computer affected by that conflict; back up and restore the workbench first.
 
 ## Download
 
-- [Windows 0.10.5 installer](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.5/CainiaoWarehouse-Setup-0.10.5-x64.exe)
-- [fnOS installer, matching container image, checksums and acceptance record](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5)
+- [Windows 0.10.6 installer](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.6/CainiaoWarehouse-Setup-0.10.6-x64.exe)
+- [fnOS installer, matching container image, checksums and acceptance record](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
 - [fnOS installation guide](deploy/fnos/README.en.md)
 
-Version 0.10.5 shortens product names in notification reports to roughly eight Chinese characters or sixteen ASCII characters, adding an ellipsis when needed. Full product names remain in the inventory data; SKUs and alert values are retained. fnOS opens in an embedded desktop window and supports explicitly configured application domains.
+Version 0.10.6 preserves full product names and wraps them across lines. The stock-coverage header uses two lines; DingTalk SKUs and stock/sales quantities use smaller text while keeping all digits and alert values. fnOS retains its embedded desktop window and explicitly configured application domains.
 
 ## Features
 
@@ -90,7 +90,15 @@ npm run dev
 
 `npm test` runs regression checks, `npm run test:ui` checks the desktop UI, and `npm run build` builds the installer. Ordinary launches use the standalone data directory; automated tests use temporary ledgers. See [Windows development](windows/README.en.md).
 
-## Release verification
+## Release verification — 0.10.6
+
+Source commit: `24b8d5d79a879522f86223f8704753276fbb14c2`.
+
+- [Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43260024922), [packaged installer acceptance](https://github.com/907609732/cainiao-inventory/actions/runs/43260030224) and [fnOS build checks](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032). Installation checks use synthetic data and cover fresh installation, upgrade from 0.10.5, reinstall, separate uninstall identity and settings/data preservation.
+- The new layout is covered by offline simulation and automated tests. Real DingTalk client rendering remains unverified; font size and final column widths depend on the client. This release does not collect real inventory, send notifications or update the deployed NAS.
+- [Release assets, checksums and acceptance record](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6).
+
+### Previous 0.10.5 verification
 
 Release source commit: `d1e71bf864e331b7820b5d7fb1dcfc77cebb6983`.
 

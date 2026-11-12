@@ -4,7 +4,7 @@
 
 0.9.3、0.9.4 已因安装身份冲突撤回。安装修复版前，已发生覆盖的电脑应先恢复工作台；不要直接运行旧云仓卸载程序。
 
-当前正式版为 **0.10.5**。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5)。云仓独立运行，不依赖 ERP；APP、网页版和 AI 接口共用一个后台。建议使用 Node.js 24，与正式 CI 一致。
+当前正式版为 **0.10.6**。[下载安装器及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)。云仓独立运行，不依赖 ERP；APP、网页版和 AI 接口共用一个后台。建议使用 Node.js 24，与正式 CI 一致。
 
 ## 开发启动
 
@@ -28,9 +28,9 @@ npm run test:ui
 npm run warehouse:build -- --publish never
 ```
 
-安装器输出为 `dist/CainiaoWarehouse-Setup-0.10.5-x64.exe`，同时生成 `latest.yml` 和差分更新索引。更新仓库为 `907609732/cainiao-inventory`。打包命令不自动发布，不应注入个人 GitHub 凭据。发布时核对版本、产物摘要、更新源及源码提交。
+安装器输出为 `dist/CainiaoWarehouse-Setup-0.10.6-x64.exe`，同时生成 `latest.yml` 和差分更新索引。更新仓库为 `907609732/cainiao-inventory`。打包命令不自动发布，不应注入个人 GitHub 凭据。发布时核对版本、产物摘要、更新源及源码提交。
 
-[0.10.5 Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43225609395) 和[同次安装包验收](https://github.com/907609732/cainiao-inventory/actions/runs/43225618054)通过。安装测试涵盖全新安装、0.9.7 升级、重复安装、独立卸载身份、虚构库存与设置保留，以及 APP/网页共用后台。旧工作台公开基线包不可用，本轮未重复实测共存。真实平台采集、通知送达和数据迁移不属于本轮发布测试；安装器未作 Authenticode 签名。
+[0.10.6 Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43260024922) 和[同次安装包验收](https://github.com/907609732/cainiao-inventory/actions/runs/43260030224)通过。安装测试涵盖全新安装、0.10.5 升级、重复安装、独立卸载身份、虚构库存与设置保留，以及 APP/网页共用后台。旧工作台公开基线包不可用，本轮未重复实测共存。真实平台采集、通知送达和数据迁移不属于本轮发布测试；安装器未作 Authenticode 签名。
 
 ## 数据与源码范围
 

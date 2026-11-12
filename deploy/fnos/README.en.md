@@ -2,14 +2,14 @@
 
 [简体中文（默认）](README.md) | **English** · [Home](../../README.en.md)
 
-Stable version **0.10.5** targets **x86-64 fnOS with Docker enabled**. App ID: `cainiao-warehouse`. The application, collection browser and schedules run on the NAS independently of ERP; the Windows client does not need to stay open.
+Stable version **0.10.6** targets **x86-64 fnOS with Docker enabled**. App ID: `cainiao-warehouse`. The application, collection browser and schedules run on the NAS independently of ERP; the Windows client does not need to stay open.
 
-[Download the FPK, matching image and checksums](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5)
+[Download the FPK, matching image and checksums](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
 
 ## Install or update
 
-1. Download `cainiao-warehouse-0.10.5-x86.fpk`, `cainiao-warehouse-0.10.5-image.tar.gz` and `SHA256SUMS.txt`. Verify SHA-256 and keep the installer/image versions matched.
-2. Import the image in fnOS Docker. CLI: `docker load --input cainiao-warehouse-0.10.5-image.tar.gz`. If the GUI only accepts `.tar`, decompress the archive to `.tar` first.
+1. Download `cainiao-warehouse-0.10.6-x86.fpk`, `cainiao-warehouse-0.10.6-image.tar.gz` and `SHA256SUMS.txt`. Verify SHA-256 and keep the installer/image versions matched.
+2. Import the image in fnOS Docker. CLI: `docker load --input cainiao-warehouse-0.10.6-image.tar.gz`. If the GUI only accepts `.tar`, decompress the archive to `.tar` first.
 3. Check that web port `18761` and host-loopback API port `18762` are available. Investigate conflicts without stopping unrelated services.
 4. Manually install the FPK in App Center. For an existing installation, update it while preserving its application data directory. Take a complete offline backup before upgrading.
 5. Confirm the access address in the wizard. Additional domains must be complete `https://` or `http://` origins without paths, separated by commas. Leaving this field blank during an upgrade preserves existing aliases.
@@ -63,6 +63,6 @@ Project uninstall hooks do not proactively delete data, backups, images or ERP f
 
 Packaging reuses official fnpack, Node.js 24, Docker, Playwright Chromium, Xvfb and noVNC. No NAS-wide Node/Python or desktop-service installation is required. See [third-party notices](THIRD-PARTY.md).
 
-[The same-commit 0.10.5 build](https://github.com/907609732/cainiao-inventory/actions/runs/43225609303) passed container, four-view UI, transport-boundary, restart and offline restore checks. Version 0.10.5 had already been installed on the authorized NAS with inventory, settings, dataset identity and schedules preserved. The formal release artifacts were not deployed again and did not trigger real business sends.
+[The same-commit 0.10.6 build](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032) passed container, four-view UI, transport-boundary, restart and offline restore checks. Version 0.10.5 had already been installed on the authorized NAS with inventory, settings, dataset identity and schedules preserved. The formal release artifacts were not deployed again and did not trigger real business sends.
 
 Actions artifacts include `build.json`, `image-inspect.json` and build checksums. The stable Release provides the FPK, image, `SHA256SUMS.txt` and `acceptance.json`. [Deployment history (Chinese)](../../docs/fnos-deployment.md) retains earlier findings; consult the final entry for the relevant version.

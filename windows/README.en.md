@@ -2,7 +2,7 @@
 
 [简体中文（默认）](README.md) | **English** · [Home](../README.en.md)
 
-Stable version: **0.10.5**. [Installer and verification files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5). The standalone application does not require ERP. APP, browser and AI access share one backend. Prefer Node.js 24, matching release CI.
+Stable version: **0.10.6**. [Installer and verification files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6). The standalone application does not require ERP. APP, browser and AI access share one backend. Prefer Node.js 24, matching release CI.
 
 Versions 0.9.3 and 0.9.4 were withdrawn because of installation-identity conflicts. If the old workbench was overwritten, restore it before installing a corrected version; do not run the withdrawn uninstallers.
 
@@ -28,9 +28,9 @@ npm run test:ui
 npm run warehouse:build -- --publish never
 ```
 
-Output: `dist/CainiaoWarehouse-Setup-0.10.5-x64.exe`, with `latest.yml` and the differential-update index. The update repository is `907609732/cainiao-inventory`. Building does not publish automatically. Do not inject personal GitHub credentials. Check the version, file hashes, update source and source commit before publication.
+Output: `dist/CainiaoWarehouse-Setup-0.10.6-x64.exe`, with `latest.yml` and the differential-update index. The update repository is `907609732/cainiao-inventory`. Building does not publish automatically. Do not inject personal GitHub credentials. Check the version, file hashes, update source and source commit before publication.
 
-[Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43225609395) and [same-run installer acceptance](https://github.com/907609732/cainiao-inventory/actions/runs/43225618054) passed. Checks cover fresh installation, upgrade from 0.9.7, reinstall, separate uninstall identity, synthetic inventory/settings preservation and shared APP/web backend. The old workbench baseline download was unavailable; coexistence was not retested for this release. Real platform collection, delivery and ledger migration are outside this release test. The installer is not Authenticode-signed.
+[Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43260024922) and [same-run installer acceptance](https://github.com/907609732/cainiao-inventory/actions/runs/43260030224) passed. Checks cover fresh installation, upgrade from 0.10.5, reinstall, separate uninstall identity, synthetic inventory/settings preservation and shared APP/web backend. The old workbench baseline download was unavailable; coexistence was not retested for this release. Real platform collection, delivery and ledger migration are outside this release test. The installer is not Authenticode-signed.
 
 ## Source and data boundaries
 

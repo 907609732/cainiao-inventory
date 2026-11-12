@@ -2,14 +2,14 @@
 
 **简体中文（默认）** | [English](README.en.md) · [返回首页](../../README.md)
 
-当前正式版 **0.10.5**，适用于 **x86-64 飞牛 fnOS + Docker**。应用 ID 为 `cainiao-warehouse`，与 ERP 独立部署。界面、浏览器采集和定时任务在 NAS 后台运行，Windows 客户端无需保持开启。
+当前正式版 **0.10.6**，适用于 **x86-64 飞牛 fnOS + Docker**。应用 ID 为 `cainiao-warehouse`，与 ERP 独立部署。界面、浏览器采集和定时任务在 NAS 后台运行，Windows 客户端无需保持开启。
 
-[下载正式安装包、镜像及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5)
+[下载正式安装包、镜像及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
 
 ## 安装与升级
 
-1. 下载配套的 `cainiao-warehouse-0.10.5-x86.fpk`、`cainiao-warehouse-0.10.5-image.tar.gz` 和 `SHA256SUMS.txt`，核对文件 SHA-256。不能混用其他版本镜像。
-2. 在飞牛 Docker 中导入该镜像。命令行可用 `docker load --input cainiao-warehouse-0.10.5-image.tar.gz`；如果图形界面只接受 `.tar`，先将 `.tar.gz` 解压为 `.tar` 再导入。
+1. 下载配套的 `cainiao-warehouse-0.10.6-x86.fpk`、`cainiao-warehouse-0.10.6-image.tar.gz` 和 `SHA256SUMS.txt`，核对文件 SHA-256。不能混用其他版本镜像。
+2. 在飞牛 Docker 中导入该镜像。命令行可用 `docker load --input cainiao-warehouse-0.10.6-image.tar.gz`；如果图形界面只接受 `.tar`，先将 `.tar.gz` 解压为 `.tar` 再导入。
 3. 确认网页端口 `18761`、宿主回环 API 端口 `18762` 未被其他服务占用。不要停止其他服务来腾出端口，应先核查冲突。
 4. 在应用中心手动安装 FPK；已有菜鸟云仓时选择更新，保留原应用数据目录。升级前先做完整离线备份。
 5. 在向导中确认访问地址。额外域名填写完整 `https://` 或 `http://` 地址，不带路径；多个地址用逗号分隔。升级时留空会保留已有域名配置。
@@ -63,6 +63,6 @@ node scripts/fnos-backup.mjs restore /absolute/private/backup /absolute/app/data
 
 复用飞牛官方 fnpack、Node.js 24、Docker、Playwright Chromium、Xvfb 和 noVNC；无需在 NAS 系统另装 Node/Python 或桌面服务。依赖许可见 [THIRD-PARTY.md](THIRD-PARTY.md)。
 
-[0.10.5 同提交构建](https://github.com/907609732/cainiao-inventory/actions/runs/43225609303) 已通过容器、四页界面、传输边界、重启与离线恢复检查。此前已在授权 NAS 实际更新到 0.10.5，库存、设置、独立数据集和自动任务保持一致；本次正式产物没有再次部署或触发真实业务发送。
+[0.10.6 同提交构建](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032) 已通过容器、四页界面、传输边界、重启与离线恢复检查。此前已在授权 NAS 实际更新到 0.10.5，库存、设置、独立数据集和自动任务保持一致；本次正式产物没有再次部署或触发真实业务发送。
 
 Actions 产物包含 `build.json`、`image-inspect.json` 和构建摘要；正式 Release 提供 FPK、镜像、`SHA256SUMS.txt` 与 `acceptance.json`。[详细部署验收记录](../../docs/fnos-deployment.md)保留历史过程，早期未完成项以最后对应版本的记录为准。
