@@ -508,7 +508,7 @@ export function buildInventoryMarkdown(format = "grouped", reportOverride = null
     return "| " + productName + " | " + sku + " | " + item.totalQuantity + "/" + (item.near30DaysSales || 0) + " | " + days + " | " + formatInventoryAlertLabel(item.stockAlert.level) + " |";
   });
   const lowStockText = rows.length
-    ? ["| \u8D27\u54C1\u540D\u79F0 | SKU | \u5E93\u5B58/\u9500\u91CF | \u5929\u6570 | \u9884\u8B66 |", "|---|---|---|---:|---|", ...rows].join("\n")
+    ? ["| \u8D27\u54C1\u540D\u79F0 | SKU | \u5E93\u5B58/\u9500\u91CF | \u53EF\u552E<br>\u5929\u6570 | \u9884\u8B66 |", "|---|---|---|---:|---|", ...rows].join("\n")
     : "\u2705 \u6682\u65E0\u9884\u8B66\u4E00\u4E2A\u6708\u5185\u9700\u8981\u8865\u8D27\u7684 SKU\u3002";
   return {
     title: "ERP\u5E93\u5B58\u9884\u8B66 " + reportDate,

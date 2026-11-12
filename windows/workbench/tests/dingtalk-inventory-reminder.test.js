@@ -130,7 +130,7 @@ test("builds inventory Markdown with real line breaks", () => {
   });
   assert.match(report.text, /\n/);
   assert.equal(report.text.includes("\\n"), false);
-  assert.match(report.text, /\| \u8D27\u54C1\u540D\u79F0 \| SKU \| \u5E93\u5B58\/\u9500\u91CF \| \u5929\u6570 \| \u9884\u8B66 \|/);
+  assert.match(report.text, /\| \u8D27\u54C1\u540D\u79F0 \| SKU \| \u5E93\u5B58\/\u9500\u91CF \| \u53EF\u552E<br>\u5929\u6570 \| \u9884\u8B66 \|/);
   assert.ok(report.text.includes("| 螺丝-小米钥匙白色螺丝(ba<br>ise) | BSYSLS01 | 6/30 | 6 | 🔴 不够卖 1 周 |"));
   assert.equal(report.text.includes("…"), false);
   assert.equal(report.alertItems[0].name, "螺丝-小米钥匙白色螺丝(baise)");
