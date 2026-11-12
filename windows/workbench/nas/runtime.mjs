@@ -23,10 +23,11 @@ const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')
 const clean=value=>JSON.parse(JSON.stringify(value));
 export async function createNasRuntime({dataDir,version='0.10.0',spawnProcess=spawn}={}){
  if(!dataDir)throw Error('必须指定独立数据目录');const store=createNasStorage(dataDir),workspace=store.file('workspace'),db=path.join(workspace,'data','erp.sqlite');
+ let daily;try{
  for(const name of ['data','downloads','reports','state','tests/.auth','logs'])fs.mkdirSync(path.join(workspace,name),{recursive:true,mode:0o700});
  if(!fs.existsSync(path.join(workspace,'config.json')))fs.copyFileSync(path.join(sourceRoot,'config.json'),path.join(workspace,'config.json'));
  if(!fs.existsSync(db))execFileSync(process.execPath,['--input-type=module','-e',"import {getDb,closeDb} from './core/erp/db.js';getDb();closeDb();"],{cwd:sourceRoot,env:{...process.env,CAINIAO_APP_DATA_DIR:workspace,ERP_DATA_DIR:path.dirname(db)},stdio:'pipe'});
- const daily=createWarehouseDaily({databasePath:db});
+ daily=createWarehouseDaily({databasePath:db});
  const tokenActors=new Map();const actor=context=>String(context.credentialId||context.id||context.kind||'local');
  const defaults=()=>normalizeSettings({dingtalkEnabled:false,scheduleEnabled:false,monthlySalesEnabled:false,remoteServerUrl:'',runtimeMode:'standalone'});
  let settings=normalizeSettings({...defaults(),...store.read('settings.json',{})}),secrets=store.secrets(),child=null,completion=null,runningKind='',timer=null,nextDaily=null,nextMonthly=null,closing=false,closed=false,sending=false,queue=[],publisher=null,sendCompletion=null;
@@ -84,7 +85,9 @@ export async function createNasRuntime({dataDir,version='0.10.0',spawnProcess=sp
  default:throw Object.assign(Error('不支持的操作'),{code:'UNKNOWN_OPERATION'});
  }}catch(e){e.message=safe(e.message);throw e;}}
  return {identity:{...store.identity,version},dispatch,start:async()=>{closing=false;schedule();},close:async()=>{if(closed)return;closed=true;closing=true;clearTimeout(timer);queue=[];if(sendCompletion)await sendCompletion.catch(()=>{});if(child){child.nasStop();await stopChild(child);await completion;}daily.close();store.releaseOwner();},subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn);},setPublisher(fn){publisher=fn;},executeCli,storage:store};
+ }catch(error){daily?.close();store.releaseOwner();throw error;}
 }
+
 
 
 
