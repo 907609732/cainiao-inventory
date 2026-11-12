@@ -13,13 +13,14 @@ await gateway.start();
 if(fs.existsSync(passwordFile))fs.unlinkSync(passwordFile);
 const cliFile=path.join(root,'cli-credential.json');
 // A new boot rotates the private CLI capability; it never reaches logs or the UI.
-if(fs.existsSync(cliFile)){try{const old=JSON.parse(fs.readFileSync(cliFile));await gateway.credentials.revoke(old.id);}catch{}}
-const cli=await gateway.credentials.createLocalOwner();fs.writeFileSync(cliFile,JSON.stringify(cli),{mode:0o600});
+let cli;if(fs.existsSync(cliFile)){try{const old=JSON.parse(fs.readFileSync(cliFile));cli=await gateway.credentials.rotate(old.id);}catch{}}
+cli ||= await gateway.credentials.createLocalOwner();fs.writeFileSync(cliFile,JSON.stringify(cli),{mode:0o600});
 fs.writeFileSync(path.join(root,'service.json'),JSON.stringify({apiAddress:gateway.apiAddress}),{mode:0o600});
 await runtime.start();
 let ending=false;async function stop(){if(ending)return;ending=true;await runtime.close();await gateway.stop();process.exit(0);}
 process.on('SIGTERM',()=>void stop());process.on('SIGINT',()=>void stop());
 console.log('独立云仓服务已启动；请使用安装时设置的管理员密码登录。');
+
 
 
 
