@@ -1,47 +1,68 @@
-# 独立菜鸟云仓 fnOS 包
+# 菜鸟云仓 · 飞牛 fnOS
 
-应用 ID `cainiao-warehouse`，NAS 版本 `0.10.5`（Windows 版本保持原样）。目标 x86-64 fnOS + 已启用 Docker。当前文件为实施方案；必须等 GitHub 同次构建和真实 NAS 验收后才算可安装交付。
+**简体中文（默认）** | [English](README.en.md) · [返回首页](../../README.md)
 
-## 构建与安装
+当前正式版 **0.10.5**，适用于 **x86-64 飞牛 fnOS + Docker**。应用 ID 为 `cainiao-warehouse`，与 ERP 独立部署。界面、浏览器采集和定时任务在 NAS 后台运行，Windows 客户端无需保持开启。
 
-GitHub `Independent fnOS package` 工作流生成一个私有 Actions artifact，含 `.fpk`、压缩 Docker image tar、SHA256SUMS、build.json（同次 commit/run）与 image-inspect.json；不推送镜像仓库、不发布 Release。镜像使用 Node24 + lockfile 对应 Chromium，完整 Linux 依赖均在镜像内，无需 NAS 系统安装 Node/Python/X 服务。
+[下载正式安装包、镜像及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5)
 
-1. 下载同一次 run 的完整 artifact，在暂存目录执行 `sha256sum --check SHA256SUMS`，核对 build.json 中 commit/run 与预期一致。
-2. 以 NAS 已授权管理员执行 `docker load --input cainiao-warehouse-0.10.5-image.tar.gz`。只导入此应用镜像，不接管其他容器。
-3. 检查 `ss -ltn` 确认 18761、18762 未占用。fnOS 只替本应用检查主端口；API 端口须单独核对。
-4. 在 fnOS 应用中心手动安装同次 `.fpk`。fnOS Docker 项目资源负责启动、停止；由飞牛创建本应用 `TRIM_PKGVAR`，安装回调再初始化配置。镜像导入单独执行，使包账号不获得 root 或 docker 组权限。不要使用来源不明的同名镜像替代。
-5. 在安装向导确认实际浏览器访问地址，完成后可直接打开，无需额外管理员密码。ERP API 仍通过独立凭据访问；浏览器保留同源、Host、CSRF 和严格会话 Cookie 校验。请在可信内网使用此直接访问入口。
+## 安装与升级
 
-尚未验证 fnOS 实机生命周期及安装 hook 中 TRIM_UID/TRIM_GID 的实际传递；若平台未向 Compose 传递，安装应失败，需在真实设备核查后修正，不能用 root 运行绕过。
+1. 下载配套的 `cainiao-warehouse-0.10.5-x86.fpk`、`cainiao-warehouse-0.10.5-image.tar.gz` 和 `SHA256SUMS.txt`，核对文件 SHA-256。不能混用其他版本镜像。
+2. 在飞牛 Docker 中导入该镜像。命令行可用 `docker load --input cainiao-warehouse-0.10.5-image.tar.gz`；如果图形界面只接受 `.tar`，先将 `.tar.gz` 解压为 `.tar` 再导入。
+3. 确认网页端口 `18761`、宿主回环 API 端口 `18762` 未被其他服务占用。不要停止其他服务来腾出端口，应先核查冲突。
+4. 在应用中心手动安装 FPK；已有菜鸟云仓时选择更新，保留原应用数据目录。升级前先做完整离线备份。
+5. 在向导中确认访问地址。额外域名填写完整 `https://` 或 `http://` 地址，不带路径；多个地址用逗号分隔。升级时留空会保留已有域名配置。
+6. 双击飞牛桌面的菜鸟云仓图标，会在内嵌窗口打开。也可通过 `http://<NAS地址>:18761/` 访问。首次配置菜鸟账号、通知渠道及登录态，再按需启用自动任务。
 
-## 隔离、浏览器与重启
+应用不要求新建云仓管理员密码。浏览器保留精确 Host/Origin、会话及 CSRF 校验；请通过可信内网或已有受控飞牛入口访问。域名白名单不会替代飞牛自身的登录认证，也不会自动配置外网代理、DNS 或 TLS。
 
-- 容器使用专用包 UID/GID、只读根文件系统、cap_drop ALL、no-new-privileges。仅挂载自己的 `${TRIM_PKGVAR}:/data`。无 ERP 目录、共享浏览器或 docker.sock。
-- LAN 只开放 18761 认证网页网关。18762 容器内单独认证 API 绑定 0.0.0.0，宿主仅发布 `127.0.0.1:18762`；远端 ERP 必须通过经过审查的私网通道/代理接入，不自行向 LAN 暴露。旧业务 transport 不对外开放。
-- Xvfb `:99` 禁止 TCP，x11vnc5900 与 noVNC6080 仅绑定容器 loopback，由认证网关代理网页和 WebSocket。无独立公网 VNC 端口。私有 VNC 本身不设密码，因为受同一容器和网关边界保护。
-- 浏览器 HOME、XDG_CONFIG_HOME 和 XDG_CACHE_HOME 显式指向 `/data/home` 下0700私有目录，不依赖容器 passwd 中存在飞牛包 UID；Chromium Crashpad 可在只读根文件系统下写入自己的目录。依据 Chromium 官方 Linux crash-report 路径说明：https://chromium.googlesource.com/experimental/chromium/src/+/HEAD/docs/linux/debugging_minidump.md 。
-- tini 负责子进程回收；任一必要子进程退出将停止整个容器，Docker `unless-stopped` 重启，停止应用后不自行复活。进程仅探测端口健康，不代表业务平台已登录。
-- `/data` 保存 dataset.json、master.key、secrets.bin、设置、回执、业务库与浏览器 auth；tmpfs 仅运行临时文件。自动任务的重启行为由 NAS runtime 控制，初次安装默认关闭。
+## 后台任务与通知
+
+- 每日库存任务和每月销量任务首次安装默认关闭，启用后由 NAS 进程执行。NAS、应用及网络必须可用。
+- 多渠道可同时启用；保存设置不会发送消息。设置中的小眼睛可按需查看单个已保存密码或密钥。
+- Windows 与 NAS 不会自动双向同步数据。为避免相同报告重复发送，同一业务定时任务应只在一个实例启用。
+- 先查看任务日志和各渠道受理结果；结果不明时不要重复点击发送。
+
+## 数据与访问边界
+
+| 项目 | 说明 |
+| --- | --- |
+| 数据目录 | 飞牛为本应用分配的 `TRIM_PKGVAR`，容器内为 `/data` |
+| 持久内容 | dataset.json、master.key、secrets.bin、设置、回执、库存/销量库及浏览器登录态 |
+| 网页 | LAN 端口 `18761`，支持桌面内嵌窗口及配置的应用域名 |
+| 独立 API | 宿主仅绑定 `127.0.0.1:18762`，使用独立凭据；不会自动向 LAN 开放 |
+| 可视浏览器 | Xvfb、x11vnc、noVNC 在容器内运行；VNC/noVNC 端口不单独对外暴露，经网关代理 |
+
+容器采用独立 UID/GID、只读根文件系统、`cap_drop: ALL` 和 `no-new-privileges`，不挂载 ERP 目录或 Docker socket。浏览器可写目录位于自己的 `/data/home`。运行时由 tini 回收子进程，Docker 使用 `unless-stopped`；主动停止应用后不应自行启动。健康接口正常不代表菜鸟账号已登录。
+
+不要给容器增加 root 权限或复用 ERP 浏览器目录来绕过安装问题。远端 ERP/AI 调用回环 API 需要独立、经过验证的接入方案。
 
 ## 离线备份与恢复
 
-完整 `/data` 必须一起备份，尤其 dataset.json、master.key（32 字节）、secrets.bin 与 workspace；缺失 key 拒绝备份。备份包含真实登录态和恢复密钥，应放在管理员受限目录并另行加密保存，不发送到日志/公开仓库。
+先在应用中心停止本应用，并确认其容器已停止；不停止 ERP。完整备份实际应用数据目录，包括 `dataset.json`、`master.key`、`secrets.bin` 和 `workspace`。备份含登录态与恢复密钥，应存入受限位置并另行加密，不能上传公开仓库。
 
-先在应用中心停止本应用并确认其容器停止（不停止 ERP）。在具有 Node24 的离线环境运行：
+在具备 Node.js 24 的离线环境，从仓库根目录执行：
 
-```
+```bash
 node scripts/fnos-backup.mjs backup /absolute/app/data /absolute/private/backup --service-stopped
 node scripts/fnos-backup.mjs restore /absolute/private/backup /absolute/app/data-restored --service-stopped
 ```
 
-脚本拒绝已存在的目标目录、symlink 和损坏/新增文件；逐文件 SHA256、大小、datasetId 与 key 检查通过后才原子完成恢复。`--service-stopped` 是操作员声明，不会跨容器代停应用。备份必须在应用停止后运行，不能把运行中的 SQLite 拷贝视为一致备份。
+脚本逐文件检查 SHA-256、大小、datasetId 和密钥，拒绝已有目标目录、符号链接及损坏备份。`--service-stopped` 是操作员声明，脚本不会替你停止服务。运行中的 SQLite 文件拷贝不能当作一致备份。
 
-在 NAS 可用同次镜像内的 Node24 离线运行该脚本（只给自己的数据和备份目录挂载，不挂 Docker socket）；恢复到新目录，核对完整性后由管理员把原目录改名保留为回滚，再换入恢复目录并保持专用包 UID/GID。启动后核对 datasetId 不变、解密配置可读、自动任务仍符合 opt-in 规则。此流程尚待真实 NAS 验证。
+先恢复到新目录，保留原目录用于回滚，核对专用 UID/GID 后再切换。启动后检查 datasetId、配置解密和计划任务。本流程的容器化离线恢复已通过 CI；真实 NAS 的人工目录切换恢复尚未完成端到端验收。
 
-## 更新与卸载
+升级只替换本应用镜像和 FPK，保留原 `TRIM_PKGVAR`。不要执行 `docker compose down --volumes`。存在数据格式迁移时，回滚需使用对应旧程序和一致备份，不能只降级程序。
 
-更新前停止并离线备份；只导入新镜像与安装新 fpk，保持 `TRIM_PKGVAR` 原路径。不要执行 `docker compose down --volumes`。回滚需恢复同一备份与对应旧镜像/FPK，不能仅降级有迁移的数据。
+## 卸载
 
-卸载 hook 不删除数据、备份、Docker image 或任何 ERP 文件；fnOS 自身卸载界面如提供“删除应用数据”，必须选择保留数据并先验证外部备份。平台卸载是否删除 var 目录必须实机验证；本项目不声称能覆盖平台行为。需要清理历史镜像/数据时由用户单独指定。
+本项目卸载 hook 不主动删除数据、备份、镜像或 ERP 文件。飞牛卸载界面如提供“删除应用数据”，请选择保留，并先核验外部备份；平台自身是否删除私有目录取决于其行为。本项目不能保证覆盖平台删除操作。清理历史镜像和数据应单独确认范围。
 
-依赖与许可见 THIRD-PARTY.md。验收状态和限制汇总到 `docs/fnos-deployment.md`，CI 浏览器探测不等于真实菜鸟登录、业务采集或 NAS 安装成功。
+## 构建与验收
+
+复用飞牛官方 fnpack、Node.js 24、Docker、Playwright Chromium、Xvfb 和 noVNC；无需在 NAS 系统另装 Node/Python 或桌面服务。依赖许可见 [THIRD-PARTY.md](THIRD-PARTY.md)。
+
+[0.10.5 同提交构建](https://github.com/907609732/cainiao-inventory/actions/runs/43225609303) 已通过容器、四页界面、传输边界、重启与离线恢复检查。此前已在授权 NAS 实际更新到 0.10.5，库存、设置、独立数据集和自动任务保持一致；本次正式产物没有再次部署或触发真实业务发送。
+
+Actions 产物包含 `build.json`、`image-inspect.json` 和构建摘要；正式 Release 提供 FPK、镜像、`SHA256SUMS.txt` 与 `acceptance.json`。[详细部署验收记录](../../docs/fnos-deployment.md)保留历史过程，早期未完成项以最后对应版本的记录为准。
