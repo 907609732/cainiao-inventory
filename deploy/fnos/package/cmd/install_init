@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 umask 077
+for port in 18761 18762; do
+  if timeout 1 bash -c "exec 3<>/dev/tcp/127.0.0.1/$port" >/dev/null 2>&1; then
+    printf 'Cloud warehouse port %s is already in use; no existing service was stopped.\n' "$port" > "${TRIM_TEMP_LOGFILE:?}"
+    exit 1
+  fi
+done
 mkdir -p "${TRIM_PKGVAR:?}/data"
 chmod 700 "$TRIM_PKGVAR/data"
 origin="${wizard_public_origin:?Public origin is required}"
