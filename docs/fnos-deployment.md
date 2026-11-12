@@ -59,3 +59,14 @@ CLI 显式 `collect-only --confirm-collect` 可执行真实采集、校验、入
 ## 0.10.1 免密码调整（进行中）
 
 复用现有 Fastify 网关和会话机制，不新增依赖。主进程显式使用直接网页访问模式；凭据 API、私有 CLI owner、ERP 只读权限继续隔离。针对性传输测试与四页 UI 实测通过，待同次 GitHub 构建和 NAS 安装验收。
+
+## 2026-11-12 免密码安装与真实 NAS 故障定位
+
+- 用户明确取消独立云仓管理员密码；0.10.1 安装向导已无密码字段，主服务采用直接网页访问，ERP API 独立凭据不变。原 Windows 版本不受影响。
+- 3f90945 构建 43157910381 与 Windows CI 均通过；25 项针对性测试中 23 通过、2 Linux 本地跳过，真实四页浏览器测试通过。NAS 导入镜像 `cainiao-warehouse:0.10.1` 成功，FPK 安装失败，服务端口尚未启动。
+- 诊断构建 43159207305 通过；NAS 重现明确报错 `private-data-directory (exit 1)`。对照 fnOS 安装阶段及同类开源项目记录，install_init 早于私有数据目录准备，不能在此创建持久数据子目录。
+- f15722b 修复：install_init 仅验证端口与向导；install_callback 在私有目录创建后写入 public-origin；容器仅挂载 `${TRIM_PKGVAR}:/data`，保持非 root、私有目录与 ERP 隔离。尚无此前安装成功的数据，因此没有执行存量路径迁移。此后配置/升级脚本使用同一目录。
+- 修正 FPK 已从 GitHub run 43160211642 下载到 `C:\Users\90760\Documents\Codex\cainiao-fnos-fixed-43160211642`，待真实安装；同次容器测试已通过，整个工作流仍在收尾。
+- NAS 后台在等待期间返回登录页面；已请用户重新登录原有 NAS 账号，未要求新建密码。无需云仓管理员密码。当前不能声称安装或业务采集验收完成。
+- 未停止/重建原有 `jx-frpc`、`qwrt`、`homeassistant` 容器，未操作 ERP 安装目录和历史数据库。未迁移历史数据、未发送真实通知。
+- 后续备份源应为本应用实际 `TRIM_PKGVAR`，不再额外拼接 `/data`；此前 0.10.0 未完成安装。

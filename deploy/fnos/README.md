@@ -1,22 +1,22 @@
 # 独立菜鸟云仓 fnOS 包
 
-应用 ID `cainiao-warehouse`，NAS 版本 `0.10.1`（Windows 版本保持原样）。目标 x86-64 fnOS + 已启用 Docker。当前文件为实施方案；必须等 GitHub 同次构建和真实 NAS 验收后才算可安装交付。
+应用 ID `cainiao-warehouse`，NAS 版本 `0.10.2`（Windows 版本保持原样）。目标 x86-64 fnOS + 已启用 Docker。当前文件为实施方案；必须等 GitHub 同次构建和真实 NAS 验收后才算可安装交付。
 
 ## 构建与安装
 
 GitHub `Independent fnOS package` 工作流生成一个私有 Actions artifact，含 `.fpk`、压缩 Docker image tar、SHA256SUMS、build.json（同次 commit/run）与 image-inspect.json；不推送镜像仓库、不发布 Release。镜像使用 Node24 + lockfile 对应 Chromium，完整 Linux 依赖均在镜像内，无需 NAS 系统安装 Node/Python/X 服务。
 
 1. 下载同一次 run 的完整 artifact，在暂存目录执行 `sha256sum --check SHA256SUMS`，核对 build.json 中 commit/run 与预期一致。
-2. 以 NAS 已授权管理员执行 `docker load --input cainiao-warehouse-0.10.1-image.tar.gz`。只导入此应用镜像，不接管其他容器。
+2. 以 NAS 已授权管理员执行 `docker load --input cainiao-warehouse-0.10.2-image.tar.gz`。只导入此应用镜像，不接管其他容器。
 3. 检查 `ss -ltn` 确认 18761、18762 未占用。fnOS 只替本应用检查主端口；API 端口须单独核对。
-4. 在 fnOS 应用中心手动安装同次 `.fpk`。fnOS Docker 项目资源负责启动、停止；首次由包用户创建自己的 `TRIM_PKGVAR/data`。镜像导入单独执行，使包账号不获得 root 或 docker 组权限。不要使用来源不明的同名镜像替代。
+4. 在 fnOS 应用中心手动安装同次 `.fpk`。fnOS Docker 项目资源负责启动、停止；由飞牛创建本应用 `TRIM_PKGVAR`，安装回调再初始化配置。镜像导入单独执行，使包账号不获得 root 或 docker 组权限。不要使用来源不明的同名镜像替代。
 5. 在安装向导确认实际浏览器访问地址，完成后可直接打开，无需额外管理员密码。ERP API 仍通过独立凭据访问；浏览器保留同源、Host、CSRF 和严格会话 Cookie 校验。请在可信内网使用此直接访问入口。
 
 尚未验证 fnOS 实机生命周期及安装 hook 中 TRIM_UID/TRIM_GID 的实际传递；若平台未向 Compose 传递，安装应失败，需在真实设备核查后修正，不能用 root 运行绕过。
 
 ## 隔离、浏览器与重启
 
-- 容器使用专用包 UID/GID、只读根文件系统、cap_drop ALL、no-new-privileges。仅挂载自己的 `${TRIM_PKGVAR}/data:/data`。无 ERP 目录、共享浏览器或 docker.sock。
+- 容器使用专用包 UID/GID、只读根文件系统、cap_drop ALL、no-new-privileges。仅挂载自己的 `${TRIM_PKGVAR}:/data`。无 ERP 目录、共享浏览器或 docker.sock。
 - LAN 只开放 18761 认证网页网关。18762 容器内单独认证 API 绑定 0.0.0.0，宿主仅发布 `127.0.0.1:18762`；远端 ERP 必须通过经过审查的私网通道/代理接入，不自行向 LAN 暴露。旧业务 transport 不对外开放。
 - Xvfb `:99` 禁止 TCP，x11vnc5900 与 noVNC6080 仅绑定容器 loopback，由认证网关代理网页和 WebSocket。无独立公网 VNC 端口。私有 VNC 本身不设密码，因为受同一容器和网关边界保护。
 - 浏览器 HOME、XDG_CONFIG_HOME 和 XDG_CACHE_HOME 显式指向 `/data/home` 下0700私有目录，不依赖容器 passwd 中存在飞牛包 UID；Chromium Crashpad 可在只读根文件系统下写入自己的目录。依据 Chromium 官方 Linux crash-report 路径说明：https://chromium.googlesource.com/experimental/chromium/src/+/HEAD/docs/linux/debugging_minidump.md 。
@@ -40,7 +40,7 @@ node scripts/fnos-backup.mjs restore /absolute/private/backup /absolute/app/data
 
 ## 更新与卸载
 
-更新前停止并离线备份；只导入新镜像与安装新 fpk，保持 `TRIM_PKGVAR/data` 原路径。不要执行 `docker compose down --volumes`。回滚需恢复同一备份与对应旧镜像/FPK，不能仅降级有迁移的数据。
+更新前停止并离线备份；只导入新镜像与安装新 fpk，保持 `TRIM_PKGVAR` 原路径。不要执行 `docker compose down --volumes`。回滚需恢复同一备份与对应旧镜像/FPK，不能仅降级有迁移的数据。
 
 卸载 hook 不删除数据、备份、Docker image 或任何 ERP 文件；fnOS 自身卸载界面如提供“删除应用数据”，必须选择保留数据并先验证外部备份。平台卸载是否删除 var 目录必须实机验证；本项目不声称能覆盖平台行为。需要清理历史镜像/数据时由用户单独指定。
 

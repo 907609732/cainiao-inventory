@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const source = await readFile(new URL('../desktop/renderer/web-adapter.js',import.meta.url),'utf8');
-function fixture({hash='',existing,fail=false,events=[],taskStatuses}={}){
+function fixture({hash='',existing,fail=false,events=[],taskStatuses,insecureHttp=false}={}){
  const calls=[],timers=[],banners=[];let counter=0;
- const window={inventoryApp:existing,location:{hash,pathname:'/renderer/index.html',search:''},history:{replaceState(...args){calls.push(['history',...args]);}},crypto:{randomUUID:()=>`request-${++counter}`},addEventListener(){}};
+ const window={inventoryApp:existing,location:{hash,pathname:'/renderer/index.html',search:''},history:{replaceState(...args){calls.push(['history',...args]);}},crypto:insecureHttp?{getRandomValues:bytes=>{bytes.fill(++counter);return bytes;}}:{randomUUID:()=>`request-${++counter}`} ,addEventListener(){}};
  const document={readyState:'complete',getElementById:()=>null,createElement:()=>({setAttribute(){},textContent:'',hidden:false}),body:{prepend(el){banners.push(el);}},addEventListener(){}};
  const fetch=async(url,options={})=>{calls.push([url,options]);if(fail)throw Error('offline');if(taskStatuses && (url.endsWith('/sendDateException') || url.includes('/tasks/'))) return {ok:true,json:async()=>({ok:true,value:url.includes('/tasks/')?taskStatuses.shift():{taskId:'receipt-1',status:'running'}})};return {ok:true,json:async()=>url.includes('/session')?{csrf:'csrf-test'}:url.includes('/events')?{cursor:7,events}:{ok:true,value:{operation:url}}};};
  vm.runInNewContext(source,{window,document,location:window.location,history:window.history,crypto:window.crypto,URLSearchParams,fetch,setTimeout:fn=>timers.push(fn),clearTimeout(){},console});
@@ -50,4 +50,12 @@ for (const outcome of ['succeeded','failed','unknown']) test(`task receipt ${out
  else assert.match(resolved.error.message,outcome==='failed'?/delivery rejected/:/receipt-1/);
  assert.equal(f.calls.filter(c=>String(c[0]).endsWith('/sendDateException')).length,1);
  assert.equal(f.calls.filter(c=>String(c[0]).includes('/tasks/')).length,2);
+});
+
+test('LAN HTTP without secure-context randomUUID can save settings with unique request keys',async()=>{
+ const f=fixture({insecureHttp:true});
+ await f.window.inventoryApp.saveSettingsSection({section:'automation',settings:{scheduleEnabled:false}});
+ await f.window.inventoryApp.saveSettingsSection({section:'automation',settings:{scheduleEnabled:false}});
+ const keys=f.calls.filter(c=>String(c[0]).endsWith('/saveSettingsSection')).map(c=>c[1].headers['Idempotency-Key']);
+ assert.equal(keys.length,2);assert.notEqual(keys[0],keys[1]);assert.match(keys[0],/^[a-f0-9]{32}$/);
 });

@@ -1,6 +1,6 @@
 services:
   warehouse:
-    image: cainiao-warehouse:0.10.1
+    image: cainiao-warehouse:0.10.2
     pull_policy: never
     container_name: cainiao-warehouse
     restart: unless-stopped

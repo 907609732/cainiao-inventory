@@ -45,7 +45,7 @@
     throw new Error('等待任务 ' + taskId + ' 超过 20 分钟，请在应用中核对结果；任务不会自动重启。');
   }
   async function call(operation, payload) {
-    const key = writes.has(operation) ? window.crypto.randomUUID() : null;
+    const key = writes.has(operation) ? (window.crypto.randomUUID ? window.crypto.randomUUID() : Array.from(window.crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')) : null;
     await session;
     let data = payload || {};
     if (operation === 'saveSettings' || operation === 'saveSettingsSection') data = {...data,secrets:Object.fromEntries(Object.entries(data.secrets || {}).filter(([,value])=>value !== ''))};
