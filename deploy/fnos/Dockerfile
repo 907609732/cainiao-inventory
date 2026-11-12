@@ -16,7 +16,7 @@ COPY windows/workbench/scripts ./scripts
 COPY deploy/fnos/entrypoint.sh /app/entrypoint.sh
 COPY deploy/fnos/healthcheck.mjs /app/healthcheck.mjs
 COPY scripts/fnos-backup.mjs /app/scripts/fnos-backup.mjs
-RUN chmod 755 /app/entrypoint.sh && mkdir /data && chown 1000:1000 /data
+RUN chmod 755 /app/entrypoint.sh && mkdir -p /data && chown 1000:1000 /data
 USER 1000:1000
 EXPOSE 18761 18762
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 CMD ["node", "/app/healthcheck.mjs"]
