@@ -30,7 +30,7 @@ for (const hook of ['install_callback', 'uninstall_callback', 'upgrade_callback'
 }
 for (const file of await readdir(path.join(project, 'cmd'))) await chmod(path.join(project, 'cmd', file), 0o755);
 await copyFile(path.join(root, 'deploy/fnos/THIRD-PARTY.md'), path.join(project, 'THIRD-PARTY.md'));
-await writeFile(path.join(project, 'LICENSE'), 'No additional license to this private application is granted by this package. Third-party components retain their respective licenses. See THIRD-PARTY.md and the notices retained in the image.\n');
+await copyFile(path.join(root, 'LICENSE'), path.join(project, 'LICENSE'));
 run(fnpack, ['build'], project);
 const packages = (await readdir(project)).filter((file) => file.endsWith('.fpk'));
 if (packages.length !== 1) throw new Error('fnpack must produce exactly one FPK');

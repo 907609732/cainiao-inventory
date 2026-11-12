@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb x11vnc novnc websockify tini fonts-noto-cjk ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/windows/workbench
+COPY LICENSE /app/LICENSE
 COPY windows/workbench/package.json windows/workbench/package-lock.json ./
 COPY windows/workbench/config.json ./config.json
 RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --omit=dev --ignore-scripts \
