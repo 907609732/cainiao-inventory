@@ -65,11 +65,11 @@ jobs:
           Copy-Item -LiteralPath "dist/$file" C:\Input
           $spec=@{file=$file;version=$version;sha256=(Get-FileHash "dist/$file").Hash.ToLowerInvariant();webEntry=$true;workbenchFile='CloudWarehouseInventorySync-Setup-0.11.4-x64.exe';workbenchSha256='700d64b5878929384864a828d63f6cc555f603bf540aea0f314f3b621af256ff'}
           if($env:SCENARIO -eq 'upgrade'){
-            gh release download v0.9.7 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.9.7-x64.exe --dir C:\Input
+            gh release download v0.10.5 --repo $env:GITHUB_REPOSITORY --pattern CainiaoWarehouse-Setup-0.10.5-x64.exe --dir C:\Input
             if($LASTEXITCODE -ne 0){throw 'Previous cloud download failed'}
-            $spec.previousFile='CainiaoWarehouse-Setup-0.9.7-x64.exe'
-            $spec.previousSha256='ef82cbeb11fa29a036093579b9b4355a5f9b3f27e4c0cc9bfef7e37d38b41bc6'
-            $spec.previousVersion='0.9.7'
+            $spec.previousFile='CainiaoWarehouse-Setup-0.10.5-x64.exe'
+            $spec.previousSha256='d47891d4d9afecc4a3a7f3d73a1ab2c59dbae5b08b9d78dccc2d2bc843c79621'
+            $spec.previousVersion='0.10.5'
           }
           if($env:LEGACY_FIXTURE_TAG){
             $expected=@(1..13 | Where-Object {$_ -ne 4} | ForEach-Object {'legacy-workbench.7z.'+$_.ToString('000')})

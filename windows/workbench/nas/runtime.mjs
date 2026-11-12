@@ -21,7 +21,7 @@ import branding from '../desktop/shared/branding.cjs';
 import {STANDALONE_CHANGELOG} from '../desktop/shared/changelog.mjs';
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const clean=value=>JSON.parse(JSON.stringify(value));
-export async function createNasRuntime({dataDir,version='0.10.5',spawnProcess=spawn,sendReport=sendNotificationReport}={}){
+export async function createNasRuntime({dataDir,version='0.10.6',spawnProcess=spawn,sendReport=sendNotificationReport}={}){
  if(!dataDir)throw Error('必须指定独立数据目录');const store=createNasStorage(dataDir),workspace=store.file('workspace'),db=path.join(workspace,'data','erp.sqlite');
  let daily;try{
  for(const name of ['data','downloads','reports','state','tests/.auth','logs'])fs.mkdirSync(path.join(workspace,name),{recursive:true,mode:0o700});
