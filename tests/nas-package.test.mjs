@@ -39,3 +39,21 @@ test('package exposes gateway and host-loopback API only, isolates data and drop
   assert.match(compose, /no-new-privileges/);
   assert.match(compose, /cap_drop: \[ALL\]/);
 });
+
+test('Linux backup distinguishes live process owner from reused namespace PID', { skip: process.platform !== 'linux' }, async () => {
+  const { backupData } = await import('../scripts/fnos-backup.mjs');
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'cainiao-process-proof-'));
+  try {
+    const source = path.join(dir, 'data');
+    await mkdir(source);
+    await writeFile(path.join(source, 'dataset.json'), JSON.stringify({ datasetId: 'dataset-a' }));
+    await writeFile(path.join(source, 'master.key'), Buffer.alloc(32, 17));
+    const stat = await readFile(`/proc/${process.pid}/stat`, 'utf8');
+    const processStart = { bootId: (await readFile('/proc/sys/kernel/random/boot_id', 'utf8')).trim(), startTime: stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19] };
+    await writeFile(path.join(source, 'runtime.lock'), JSON.stringify({ pid: process.pid, processStart }));
+    await assert.rejects(backupData({ source, destination: path.join(dir, 'active'), serviceStopped: true }), /live process/i);
+    await writeFile(path.join(source, 'runtime.lock'), JSON.stringify({ pid: process.pid, processStart: { ...processStart, startTime: `${processStart.startTime}0` } }));
+    await backupData({ source, destination: path.join(dir, 'stale'), serviceStopped: true });
+    assert.equal(JSON.parse(await readFile(path.join(dir, 'stale', 'backup.json'))).datasetId, 'dataset-a');
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
