@@ -25,6 +25,8 @@ services:
       CAINIAO_BROWSER_URL: http://127.0.0.1:6080
       DISPLAY: ":99"
       HOME: /data/home
+      XDG_CONFIG_HOME: /data/home/.config
+      XDG_CACHE_HOME: /data/home/.cache
       TZ: Asia/Shanghai
       BUSINESS_TIME_ZONE: Asia/Shanghai
     volumes:

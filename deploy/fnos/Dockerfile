@@ -1,5 +1,6 @@
 FROM node:24-bookworm-slim
-ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/opt/playwright DISPLAY=:99 HOME=/data/home
+ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/opt/playwright DISPLAY=:99 HOME=/data/home \
+    XDG_CONFIG_HOME=/data/home/.config XDG_CACHE_HOME=/data/home/.cache
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb x11vnc novnc websockify tini fonts-noto-cjk ca-certificates \
     && rm -rf /var/lib/apt/lists/*

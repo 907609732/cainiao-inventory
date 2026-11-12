@@ -19,6 +19,7 @@ GitHub `Independent fnOS package` 工作流生成一个私有 Actions artifact�
 - 容器使用专用包 UID/GID、只读根文件系统、cap_drop ALL、no-new-privileges。仅挂载自己的 `${TRIM_PKGVAR}/data:/data`。无 ERP 目录、共享浏览器或 docker.sock。
 - LAN 只开放 18761 认证网页网关。18762 容器内单独认证 API 绑定 0.0.0.0，宿主仅发布 `127.0.0.1:18762`；远端 ERP 必须通过经过审查的私网通道/代理接入，不自行向 LAN 暴露。旧业务 transport 不对外开放。
 - Xvfb `:99` 禁止 TCP，x11vnc5900 与 noVNC6080 仅绑定容器 loopback，由认证网关代理网页和 WebSocket。无独立公网 VNC 端口。私有 VNC 本身不设密码，因为受同一容器和网关边界保护。
+- 浏览器 HOME、XDG_CONFIG_HOME 和 XDG_CACHE_HOME 显式指向 `/data/home` 下0700私有目录，不依赖容器 passwd 中存在飞牛包 UID；Chromium Crashpad 可在只读根文件系统下写入自己的目录。依据 Chromium 官方 Linux crash-report 路径说明：https://chromium.googlesource.com/experimental/chromium/src/+/HEAD/docs/linux/debugging_minidump.md 。
 - tini 负责子进程回收；任一必要子进程退出将停止整个容器，Docker `unless-stopped` 重启，停止应用后不自行复活。进程仅探测端口健康，不代表业务平台已登录。
 - `/data` 保存 dataset.json、master.key、secrets.bin、设置、回执、业务库与浏览器 auth；tmpfs 仅运行临时文件。自动任务的重启行为由 NAS runtime 控制，初次安装默认关闭。
 

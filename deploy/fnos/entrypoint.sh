@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 umask 077
-mkdir -p /data/home /data/browser-profile /tmp/cainiao
-export HOME=/data/home DISPLAY=:99
+export HOME=/data/home XDG_CONFIG_HOME=/data/home/.config XDG_CACHE_HOME=/data/home/.cache DISPLAY=:99
+mkdir -p "$HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" /data/browser-profile /tmp/cainiao
+chmod 700 "$HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 export LINGTU_BROWSER_PATH="$(node --input-type=module -e "import { chromium } from 'playwright'; process.stdout.write(chromium.executablePath())")"
 pids=()
 cleanup() {
