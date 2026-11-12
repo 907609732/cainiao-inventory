@@ -4,17 +4,19 @@
 
 > **0.9.3、0.9.4 已撤回，请勿继续安装。** 旧包复用了电商工作台的安装身份，存在覆盖风险。已发生覆盖时不要直接运行旧卸载程序，应先备份并恢复工作台。
 
-当前版本为 **0.9.7**，已通过全新安装、0.9.6 升级及工作台共存验收。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
+当前正式版为 **0.10.5**，提供 Windows x64 和飞牛 x86-64 安装包。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
 
-0.9.7 已精简设置页，并新增飞书、企业微信、邮箱和 Telegram 多渠道通知，支持同时启用；日期偏旧但其他校验通过时，可二次确认后[特殊发送](docs/date-exception-send.md)。见[配置及验证范围](docs/notifications.md)。
+设置页集中维护与更新，并新增飞书、企业微信、邮箱和 Telegram 多渠道通知，支持同时启用；日期偏旧但其他校验通过时，可二次确认后[特殊发送](docs/date-exception-send.md)。见[配置及验证范围](docs/notifications.md)。
+
+0.10.5 缩短通知报告中的货品名称，保留完整 SKU 和预警。飞牛桌面内嵌打开，支持配置应用域名、后台定时任务及按需显示已保存密钥。Windows 提供 APP、网页版和 AI 接口。
 
 ## 下载
 
-[下载 0.9.7 Windows x64 安装器（约 125 MiB）](https://github.com/907609732/cainiao-inventory/releases/download/v0.9.7/CainiaoWarehouse-Setup-0.9.7-x64.exe) · [发布及测试记录](https://github.com/907609732/cainiao-inventory/releases/tag/v0.9.7)
+[下载 0.10.5 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.5/CainiaoWarehouse-Setup-0.10.5-x64.exe) · [飞牛安装包与配套镜像](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.5) · [飞牛安装说明](deploy/fnos/README.md)
 
 ## 两款软件分别安装
 
-| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.9.7 |
+| 项目 | 五成电子商务工作台 | 菜鸟云仓 0.10.5 |
 | --- | --- | --- |
 | 程序目录 | `%LOCALAPPDATA%\Programs\wucheng-ecommerce-erp-v2` | `%LOCALAPPDATA%\Programs\CainiaoWarehouse` |
 | 主程序 | 原工作台主程序 | `CainiaoWarehouse.exe` |
