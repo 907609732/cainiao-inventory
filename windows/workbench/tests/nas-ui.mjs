@@ -21,7 +21,7 @@ try {
  if(gatewayMode){
   // Isolated fake fnOS transport: inject identity only at this private test proxy.
   proxy=http.createServer((req,res)=>{
-   const upstream=http.request({socketPath:socket,path:req.url,method:req.method,headers:{...req.headers,'x-trim-userid':'1000','x-trim-isadmin':'true'}},response=>{res.writeHead(response.statusCode,response.headers);response.pipe(res);});
+   const upstream=http.request({socketPath:socket,path:req.url,method:req.method,headers:{...req.headers,host:'127.0.0.1','x-forwarded-proto':'http','x-trim-userid':'1000','x-trim-isadmin':'true'}},response=>{res.writeHead(response.statusCode,response.headers);response.pipe(res);});
    upstream.on('error',error=>res.destroy(error));req.pipe(upstream);
   });
   await new Promise(resolve=>proxy.listen(0,'127.0.0.1',resolve));

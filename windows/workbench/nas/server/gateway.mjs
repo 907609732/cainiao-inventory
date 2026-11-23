@@ -30,8 +30,13 @@ export function gatewayOrigin(req){
  if(origin!==undefined){
   if(typeof origin!=='string'||origin==='null')throw error(403,'INVALID_ORIGIN');
   let parsedOrigin;try{parsedOrigin=new URL(origin);}catch{throw error(403,'INVALID_ORIGIN');}
-  const originPort=parsedOrigin.port||(parsedOrigin.protocol==='https:'?'443':'80'),hostPort=parsed.port||(parsedOrigin.protocol==='https:'?'443':'80');
-  if(!['http:','https:'].includes(parsedOrigin.protocol)||parsedOrigin.origin!==origin||parsedOrigin.hostname.toLowerCase()!==parsed.hostname.toLowerCase()||originPort!==hostPort)throw error(403,'INVALID_ORIGIN');
+  const originPort=parsedOrigin.port||(parsedOrigin.protocol==='https:'?'443':'80');
+  // fnOS 1.2 strips the external port from Host on its authenticated Unix hop.
+  // Keep exact hostname/protocol checks; compare ports only when Host retains one.
+  const explicitHostPort=/\]:\d+$/.test(host)||(!host.startsWith('[')&&/:\d+$/.test(host));
+  const hostPort=parsed.port||(normalizedHost.endsWith(':80')?'80':null);
+  const forwardedProto=req.headers['x-forwarded-proto'];
+  if(!['http:','https:'].includes(parsedOrigin.protocol)||parsedOrigin.origin!==origin||parsedOrigin.hostname.toLowerCase()!==parsed.hostname.toLowerCase()||(explicitHostPort&&originPort!==hostPort)||(typeof forwardedProto==='string'&&/^https?$/i.test(forwardedProto)&&parsedOrigin.protocol!==forwardedProto.toLowerCase()+':'))throw error(403,'INVALID_ORIGIN');
   return {expected:parsedOrigin.origin,scheme:parsedOrigin.protocol.slice(0,-1)};
  }
  const forwarded=req.headers['x-forwarded-proto'],loopback=['localhost','127.0.0.1','[::1]'].includes(parsed.hostname),plainPort=(parsed.port&&parsed.port!=='443')||normalizedHost.endsWith(':80');

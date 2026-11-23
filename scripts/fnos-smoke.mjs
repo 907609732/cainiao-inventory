@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-const image = 'cainiao-warehouse:0.10.7';
+const image = 'cainiao-warehouse:0.10.8';
 const suffix = `${process.env.GITHUB_RUN_ID || process.pid}-${process.env.GITHUB_RUN_ATTEMPT || '1'}`;
 const name = `cainiao-warehouse-ci-${suffix}`, volume = `${name}-data`;
 const dynamicName = `${name}-dynamic-uid`;

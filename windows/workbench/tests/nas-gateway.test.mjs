@@ -6,7 +6,7 @@ import {mkdtemp,rm,writeFile,stat,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {WebSocket,WebSocketServer} from 'ws';
-import {createNasGateway} from '../nas/server/gateway.mjs';
+import {createNasGateway,gatewayOrigin} from '../nas/server/gateway.mjs';
 
 const prefix='/app/cainiao-warehouse';
 const origin='https://nas.example.test';
@@ -21,6 +21,16 @@ function request(socket,path,{method='GET',headers={},body}={}){
  });
 }
 const json=result=>JSON.parse(result.text);
+test('fnOS strips Host port while preserving external Origin and forwarded protocol',()=>{
+ for(const origin of ['http://192.168.1.100:5666','https://nas.example.test:7443']){
+  const url=new URL(origin),headers={host:url.hostname,origin,'x-forwarded-proto':url.protocol.slice(0,-1)};
+  assert.equal(gatewayOrigin({headers}).expected,origin);
+  assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'https://evil.invalid'}}));
+  assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'null'}}));
+  assert.throws(()=>gatewayOrigin({headers:{...headers,'x-forwarded-proto':url.protocol==='http:'?'https':'http'}}));
+  assert.throws(()=>gatewayOrigin({headers:{...headers,host:url.hostname+':9999'}}));
+ }
+});
 function websocketConnect(socket,path,{headers={},origin:requestOrigin,timeout=5000}={}){
  return new Promise((resolve,reject)=>{
   const websocket=new WebSocket('ws://nas.example.test'+path,{createConnection:()=>net.connect(socket),origin:requestOrigin,headers});let settled=false;
@@ -86,10 +96,10 @@ test('fnOS gateway serves the same UI/API under its prefix and rejects untrusted
  assert.equal(openWeb.status,200);assert.equal(json(openWeb).value.url,origin+prefix);
 
  const httpOrigin='http://192.168.1.100:5666';
- const httpSession=await request(socket,prefix+'/api/v1/session',{headers:{...admin,host:'192.168.1.100:5666',origin:httpOrigin}});
+ const httpSession=await request(socket,prefix+'/api/v1/session',{headers:{...admin,host:'192.168.1.100','x-forwarded-proto':'http',origin:httpOrigin}});
  assert.equal(httpSession.status,200);assert.doesNotMatch(httpSession.headers['set-cookie'][0],/Secure/);
  const httpCookie=httpSession.headers['set-cookie'][0].split(';')[0],httpCsrf=json(httpSession).csrf;
- const httpAccess=await request(socket,prefix+'/api/v1/call/getLocalAccess',{method:'POST',headers:{...admin,cookie:httpCookie,host:'192.168.1.100:5666',origin:httpOrigin,'content-type':'application/json','x-csrf-token':httpCsrf,'idempotency-key':'gateway-http'},body:{}});
+ const httpAccess=await request(socket,prefix+'/api/v1/call/getLocalAccess',{method:'POST',headers:{...admin,cookie:httpCookie,host:'192.168.1.100','x-forwarded-proto':'http',origin:httpOrigin,'content-type':'application/json','x-csrf-token':httpCsrf,'idempotency-key':'gateway-http'},body:{}});
  assert.equal(httpAccess.status,200);assert.equal(json(httpAccess).value.origin,httpOrigin+prefix);
 
  const plain=await request(socket,prefix+'/api/v1/session',{headers:{...admin,host:'192.168.1.100:5666'}});
