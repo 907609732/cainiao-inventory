@@ -155,7 +155,15 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
    if(req.headers['sec-fetch-site']==='cross-site')throw error(403,'INVALID_ORIGIN');
    if(!['GET','POST','HEAD'].includes(req.method))throw error(405,'METHOD_NOT_ALLOWED');
    if(req.method==='POST'&&!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||''))throw error(415,'JSON_REQUIRED');
-   const {expected}=gatewayOrigin(req),identity=gatewayIdentity(req.headers),internalPath=gatewayPath(fnosPrefix,req.url);
+   let expected;
+   try { ({expected}=gatewayOrigin(req)); }
+   catch (failure) {
+    const suppliedOrigin=req.headers.origin;
+    const originKind=suppliedOrigin===undefined?'missing':suppliedOrigin==='null'?'null':suppliedOrigin.startsWith('https://')?'https':suppliedOrigin.startsWith('http://')?'http':'other';
+    reply.header('X-Cainiao-Gateway-Diagnostic',`${failure.code}; origin=${originKind}`);
+    throw failure;
+   }
+   const identity=gatewayIdentity(req.headers),internalPath=gatewayPath(fnosPrefix,req.url);
    req.gateway={expected,identity,internalPath};
   });
   fnos.get(fnosPrefix+'/gateway-bootstrap.js',async(req,reply)=>reply.type('application/javascript; charset=utf-8').send(`window.__CAINIAO_GATEWAY_PREFIX__=${JSON.stringify(fnosPrefix)};\n`));

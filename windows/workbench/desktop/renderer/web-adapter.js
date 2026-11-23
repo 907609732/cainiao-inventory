@@ -5,17 +5,41 @@
   const configuredPrefix = typeof window.__CAINIAO_GATEWAY_PREFIX__ === 'string' ? window.__CAINIAO_GATEWAY_PREFIX__ : '';
   const gatewayPrefix = configuredPrefix.startsWith('/') && !configuredPrefix.startsWith('//') ? configuredPrefix.replace(/\/+$/, '') : '';
   let csrf = '', cursor = 0, connected = false, stopped = false;
+  let diagnosis = '';
   function status(message) {
     const show = () => {
       let banner = document.getElementById('localWebStatus');
       if (!banner) { banner = document.createElement('div'); banner.id = 'localWebStatus'; banner.className = 'local-web-status'; banner.setAttribute('role', 'status'); document.body.prepend(banner); }
       banner.textContent = message; banner.hidden = !message;
+      if (message && diagnosis && gatewayPrefix) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = '查看并复制诊断';
+        const log = document.createElement('pre');
+        log.textContent = diagnosis;
+        log.style.whiteSpace = 'pre-wrap';
+        const copy = document.createElement('button');
+        copy.textContent = '复制诊断';
+        copy.onclick = async () => {
+          try { await navigator.clipboard.writeText(log.textContent); copy.textContent = '已复制'; }
+          catch { const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(log); selection.removeAllRanges(); selection.addRange(range); }
+        };
+        details.append(summary, copy, log);
+        banner.append(details);
+      }
       if (message) document.getElementById('warehouseLoading')?.remove();
     };
     if (document.body) show(); else document.addEventListener('DOMContentLoaded', show, {once:true});
   }
   async function request(path, options = {}) {
-    const response = await fetch(gatewayPrefix + path, {...options, credentials:'same-origin', cache:'no-store'});
+    const phase = path.split('?')[0].split('/').slice(3,5).map((part,index)=>index===1 && !path.startsWith('/api/v1/call/')?'detail':part).join('/');
+    const record = (result, reason = '') => {
+      diagnosis = [new Date().toISOString(), '请求 '+(options.method || 'GET')+' '+phase, '结果 '+result, reason, '页面协议 '+window.location.protocol, '内嵌窗口 '+(window.self !== window.top)].filter(Boolean).join('\n');
+    };
+    let response;
+    try { response = await fetch(gatewayPrefix + path, {...options, credentials:'same-origin', cache:'no-store'}); }
+    catch (error) { record('网络请求失败'); throw error; }
+    if (gatewayPrefix && !response.ok) record('HTTP '+response.status, response.headers.get('X-Cainiao-Gateway-Diagnostic') || '');
     const body = await response.json();
     if (!response.ok || body.ok === false) { const error = new Error(body.error?.message || '本机服务请求失败，请重新打开网页版。'); error.code = body.error?.code; throw error; }
     return body;
