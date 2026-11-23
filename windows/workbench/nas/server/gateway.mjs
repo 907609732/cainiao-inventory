@@ -35,8 +35,9 @@ export function gatewayOrigin(req){
   // Keep exact hostname/protocol checks; compare ports only when Host retains one.
   const explicitHostPort=/\]:\d+$/.test(host)||(!host.startsWith('[')&&/:\d+$/.test(host));
   const hostPort=parsed.port||(normalizedHost.endsWith(':80')?'80':null);
-  const forwardedProto=req.headers['x-forwarded-proto'];
-  if(!['http:','https:'].includes(parsedOrigin.protocol)||parsedOrigin.origin!==origin||parsedOrigin.hostname.toLowerCase()!==parsed.hostname.toLowerCase()||(explicitHostPort&&originPort!==hostPort)||(typeof forwardedProto==='string'&&/^https?$/i.test(forwardedProto)&&parsedOrigin.protocol!==forwardedProto.toLowerCase()+':'))throw error(403,'INVALID_ORIGIN');
+  // Origin describes the external browser scheme; forwarded-proto may describe
+  // the inner HTTP hop after FN Connect TLS termination. Do not equate them.
+  if(!['http:','https:'].includes(parsedOrigin.protocol)||parsedOrigin.origin!==origin||parsedOrigin.hostname.toLowerCase()!==parsed.hostname.toLowerCase()||(explicitHostPort&&originPort!==hostPort))throw error(403,'INVALID_ORIGIN');
   return {expected:parsedOrigin.origin,scheme:parsedOrigin.protocol.slice(0,-1)};
  }
  const forwarded=req.headers['x-forwarded-proto'],loopback=['localhost','127.0.0.1','[::1]'].includes(parsed.hostname),plainPort=(parsed.port&&parsed.port!=='443')||normalizedHost.endsWith(':80');

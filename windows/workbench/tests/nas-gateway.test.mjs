@@ -27,7 +27,7 @@ test('fnOS strips Host port while preserving external Origin and forwarded proto
   assert.equal(gatewayOrigin({headers}).expected,origin);
   assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'https://evil.invalid'}}));
   assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'null'}}));
-  assert.throws(()=>gatewayOrigin({headers:{...headers,'x-forwarded-proto':url.protocol==='http:'?'https':'http'}}));
+  assert.equal(gatewayOrigin({headers:{...headers,'x-forwarded-proto':'http'}}).expected,origin);
   assert.throws(()=>gatewayOrigin({headers:{...headers,host:url.hostname+':9999'}}));
  }
 });
