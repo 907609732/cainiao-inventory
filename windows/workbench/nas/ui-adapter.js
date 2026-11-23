@@ -22,6 +22,7 @@
         };
       }
     }
+    document.querySelector('#refreshLogin')?.setAttribute('hidden','');
     document.querySelector('#backHome')?.setAttribute('hidden','');
     document.querySelector('#openWebHeader')?.setAttribute('hidden','');
     const startup=document.querySelector('#startAtLogin');

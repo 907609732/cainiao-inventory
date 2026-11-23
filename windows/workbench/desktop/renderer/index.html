@@ -172,7 +172,6 @@
         <div><p class="eyebrow">SETTINGS</p><h2>设置</h2></div>
         <div class="status" id="statusBadge">待配置</div>
       </div>
-      <p class="field-help">各分区可单独保存，未完成机器人配置也能先保存菜鸟账号。</p>
 
 <div class="daily-connection-card hidden" data-managed-only><h3>连接由工作台统一管理</h3><p>Tailscale 连接与服务器统一在外层工作台设置。采集任务在主服务器执行；员工使用自己的工作台身份访问。</p><button class="btn" type="button" id="dailyBackToWorkbench">返回工作台设置连接</button><p id="legacyConnectionNotice" class="daily-error-note hidden">检测到旧版客户端配置，请返回工作台使用 Tailscale 连接；此处不再设置旧版远程地址。</p></div>
 
@@ -188,6 +187,9 @@
             <div class="secret-input-row"><input id="cainiaoPassword" type="password" autocomplete="current-password" placeholder="请输入密码"><button type="button" class="secret-toggle btn" data-secret-target="cainiaoPassword" aria-label="显示菜鸟密码">显示</button></div>
           </div>
         </div>
+        <div class="actions account-status"><span>登录状态：<strong id="loginState">待刷新</strong></span>
+          <button class="btn" id="refreshLogin" type="button">登录 / 刷新菜鸟状态</button>
+        </div>
         <div class="settings-actions">
           <p id="accountSaveMessage" class="save-message"></p>
           <button class="primary btn" type="submit">保存账号设置</button>
@@ -199,8 +201,8 @@
           <div><h3>通知渠道</h3><p>同一份报告可发送到多个已启用渠道，各渠道分别记录发送结果。</p></div>
           <span id="robotConfigState" class="config-state">待配置</span>
         </div>
+        <details class="notification-channel" data-notification-channel="dingtalk"><summary>钉钉</summary>
         <fieldset>
-          <legend>钉钉</legend>
           <label class="check"><input id="dingtalkEnabled" type="checkbox">启用钉钉通知</label>
           <div class="mode-tabs">
             <label><input type="radio" name="deliveryMode" value="app">企业应用机器人（推荐）</label>
@@ -230,7 +232,7 @@
               <div class="secret-input-row"><input id="dingtalkWebhookSecret" type="password" autocomplete="off" placeholder="可选"><button type="button" class="secret-toggle btn" data-secret-target="dingtalkWebhookSecret" aria-label="显示加签密钥">显示</button></div>
             </div>
           </div>
-        </fieldset>
+        </fieldset></details>
         <details class="notification-channel" data-notification-channel="feishu"><summary>飞书应用机器人</summary><p class="field-help">应用需要消息发送权限，并能访问接收目标。</p><label class="check"><input id="feishuEnabled" type="checkbox">启用飞书应用机器人通知</label><div class="form-grid"><label>App ID<input id="feishuAppId" type="text"  autocomplete="off"></label>
 <div class="secret-field"><label for="feishuAppSecret">App Secret</label><div class="secret-input-row"><input id="feishuAppSecret" type="password" autocomplete="off"><button type="button" class="secret-toggle btn" data-secret-target="feishuAppSecret">显示</button></div></div>
 <label>接收目标类型<select id="feishuReceiveIdType"><option value="chat_id">chat_id</option><option value="open_id">open_id</option><option value="union_id">union_id</option><option value="user_id">user_id</option><option value="email">email</option></select></label>
@@ -268,11 +270,15 @@
         </div>
       </form>
 
-      <section class="settings-card" id="cloudAiRuntime">
-        <div class="settings-card-heading">
-          <div><h3>AI Runtime</h3><p>同一核心支持源码、CLI、本地 stdio MCP、便携版与安装版，可供脚本和 AI 客户端调用。</p></div>
-          <span class="config-state ready">已启用</span>
-        </div>
+      <details class="settings-card" id="localAccessCard">
+        <summary>高级 · AI 接入</summary>
+        <p class="field-help">新凭据只显示一次，请妥善保存。</p>
+        <label>本机服务地址<input id="localServiceOrigin" readonly></label>
+        <label><input id="aiWriteEnabled" type="checkbox">允许新凭据执行写入操作（默认只读）</label>
+        <div class="settings-actions"><button class="btn" id="createAiCredential" type="button">生成 AI 凭据</button></div>
+        <label>新生成的凭据<input id="aiCredentialToken" readonly autocomplete="off" placeholder="仅在点击生成后显示一次"></label>
+        <div id="aiCredentialList"></div><p id="localAccessMessage" role="status"></p>
+        <details id="cloudAiRuntime"><summary>CLI 与 MCP 接入信息</summary>
         <div class="integration-grid">
           <div><strong>CLI 状态查询</strong><code id="cliCommand">正在读取…</code></div>
           <div><strong>AI Debug 诊断</strong><code id="debugCommand">正在读取…</code></div>
@@ -280,18 +286,8 @@
           <div><strong>扩展目录</strong><code id="extensionDirectory">正在读取…</code></div>
           <div><strong>MCP 配置</strong><code id="mcpCommand">正在读取…</code></div>
         </div>
-        <p class="field-help">同一核心支持源码、CLI、MCP、便携版和安装版；AI 可导出脱敏 Debug Bundle。扩展代码必须由用户显式信任，写入型 action 仍需二次确认。</p>
-      </section>
-
-      <section class="settings-card" id="localAccessCard">
-        <div class="settings-card-heading"><div><h3>本机网页与 AI 接入</h3><p>网页与应用共用本机后台。AI 凭据仅在生成时显示一次，请自行保存。</p></div></div>
-        <label>本机服务地址<input id="localServiceOrigin" readonly></label>
-        <div class="settings-actions"><button class="btn" id="openLocalWeb" type="button">打开网页版</button></div>
-        <label><input id="aiWriteEnabled" type="checkbox">允许新凭据执行写入操作（默认只读）</label>
-        <div class="settings-actions"><button class="btn" id="createAiCredential" type="button">生成 AI 凭据</button></div>
-        <label>新生成的凭据<input id="aiCredentialToken" readonly autocomplete="off" placeholder="仅在点击生成后显示一次"></label>
-        <div id="aiCredentialList"></div><p id="localAccessMessage" role="status"></p>
-      </section>
+        </details>
+      </details>
 
       <section class="settings-card" id="maintenanceCard">
         <div class="settings-card-heading">
@@ -299,17 +295,17 @@
           <span class="config-state ready" id="aboutVersion" aria-label="当前版本">—</span>
         </div>
         <div class="maintenance-grid">
-          <article class="summary-card"><span>登录状态</span><strong id="loginState">待刷新</strong></article>
           <article class="summary-card" data-standalone-update><span>软件更新</span><strong id="updateState" role="status" aria-live="polite">未检查</strong></article>
         </div>
         <div class="actions">
-          <button class="btn" id="refreshLogin" type="button">登录 / 刷新菜鸟状态</button>
-          <button class="btn" id="openData" type="button">打开数据目录</button>
-          <button class="btn" id="openLogs" type="button">打开日志目录</button>
           <button class="btn" id="checkUpdate" type="button" data-standalone-update>检查更新</button>
           <button class="primary hidden btn" id="installUpdate" type="button" data-standalone-update>重启并安装更新</button>
-          <button class="btn" id="openReleaseNotes" type="button" data-standalone-update>更新记录 <span aria-hidden="true">↗</span></button>
+
         </div>
+        <details><summary>故障排查</summary><div class="actions">
+          <button class="btn" id="openData" type="button">打开数据目录</button>
+          <button class="btn" id="openLogs" type="button">打开日志目录</button>
+        </div></details>
         <p class="field-help" data-standalone-update>下载完成后点击“重启并安装更新”。完整更新记录请访问官网或 GitHub。</p>
       </section>
 
@@ -317,6 +313,7 @@
       <footer class="settings-links" id="settingsLinks" aria-label="官方链接">
         <button class="btn" id="openWebsite" type="button" title="在默认浏览器中打开官网">官网 <span aria-hidden="true">↗</span></button>
         <button class="btn" id="openRepository" type="button" title="在默认浏览器中打开 GitHub 仓库">GitHub 仓库 <span aria-hidden="true">↗</span></button>
+        <button class="btn" id="openReleaseNotes" type="button">更新记录 <span aria-hidden="true">↗</span></button>
       </footer>
     </section>
     </div>
