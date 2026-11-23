@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const source = await readFile(new URL('../desktop/renderer/web-adapter.js',import.meta.url),'utf8');
-function fixture({hash='',existing,fail=false,events=[],taskStatuses,insecureHttp=false}={}){
+function fixture({hash='',existing,fail=false,events=[],taskStatuses,insecureHttp=false,gatewayPrefix}={}){
  const calls=[],timers=[],banners=[];let counter=0;
  const window={inventoryApp:existing,location:{hash,pathname:'/renderer/index.html',search:''},history:{replaceState(...args){calls.push(['history',...args]);}},crypto:insecureHttp?{getRandomValues:bytes=>{bytes.fill(++counter);return bytes;}}:{randomUUID:()=>`request-${++counter}`} ,addEventListener(){}};
+ if(gatewayPrefix)window.__CAINIAO_GATEWAY_PREFIX__=gatewayPrefix;
  const document={readyState:'complete',getElementById:()=>null,createElement:()=>({setAttribute(){},textContent:'',hidden:false}),body:{prepend(el){banners.push(el);}},addEventListener(){}};
  const fetch=async(url,options={})=>{calls.push([url,options]);if(fail)throw Error('offline');if(taskStatuses && (url.endsWith('/sendDateException') || url.includes('/tasks/'))) return {ok:true,json:async()=>({ok:true,value:url.includes('/tasks/')?taskStatuses.shift():{taskId:'receipt-1',status:'running'}})};return {ok:true,json:async()=>url.includes('/session')?{csrf:'csrf-test'}:url.includes('/events')?{cursor:7,events}:{ok:true,value:{operation:url}}};};
  vm.runInNewContext(source,{window,document,location:window.location,history:window.history,crypto:window.crypto,URLSearchParams,fetch,setTimeout:fn=>timers.push(fn),clearTimeout(){},console});
@@ -50,6 +51,16 @@ for (const outcome of ['succeeded','failed','unknown']) test(`task receipt ${out
  else assert.match(resolved.error.message,outcome==='failed'?/delivery rejected/:/receipt-1/);
  assert.equal(f.calls.filter(c=>String(c[0]).endsWith('/sendDateException')).length,1);
  assert.equal(f.calls.filter(c=>String(c[0]).includes('/tasks/')).length,2);
+});
+
+test('fnOS gateway prefix keeps every browser API and event request same-origin',async()=>{
+ const f=fixture({gatewayPrefix:'/app/cainiao-warehouse'});
+ await f.window.inventoryApp.getState();
+ assert.equal(f.calls.find(c=>c[0]==='/app/cainiao-warehouse/api/v1/session')[1].method,'GET');
+ assert.ok(f.calls.find(c=>String(c[0]).startsWith('/app/cainiao-warehouse/api/v1/call/getState')));
+ await new Promise(r=>setImmediate(r));
+ assert.ok(f.calls.find(c=>String(c[0]).startsWith('/app/cainiao-warehouse/api/v1/events?after=')));
+ assert.equal(f.calls.some(c=>String(c[0]).startsWith('/api/')),false);
 });
 
 test('LAN HTTP without secure-context randomUUID can save settings with unique request keys',async()=>{

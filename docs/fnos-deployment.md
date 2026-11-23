@@ -136,3 +136,11 @@ CLI 显式 `collect-only --confirm-collect` 可执行真实采集、校验、入
 - 同次 FPK SHA256 bc96b287e555d30ac706a3dc7d79ebd86255ea08989dcc1c262dba2acf8a1137；镜像 GZ SHA256 bc6738f84177bc3af4cc907bfda054f04ba1be51fcf27a4ea86ec8a3e0e61276。核验后导入镜像并通过应用中心更新。
 - 实机 LAN 和已配置飞牛域名 Host 健康接口均返回 0.10.5，datasetId 保持一致。完整设置和库存与升级前快照相等；scheduleEnabled=true、22:00、schedulingOwner=nas、无运行任务。
 - 实际重新打开飞牛桌面云仓图标，内嵌窗口正常，显示下次执行 11/12 22:00。没有触发采集或发送；历史钉钉消息不会被此次升级改写，新版报告将在下次正常发送时使用。ERP 未修改。
+
+## 飞牛统一网关接入（本地实现，未实机安装）
+
+- 桌面入口改为官方统一网关：`gatewayPrefix=/app/cainiao-warehouse`、`gatewaySocket=app.sock`，容器把 `${TRIM_APPDEST}` 挂载到 `/app-target` 并监听 `/app-target/app.sock`。LAN `18761` 与仅宿主回环 API `18762` 保留。
+- 网关监听器复用现有 Fastify/会话/CSRF/`ws`，在私有 Socket 上校验 `X-Trim-Userid` 与管理员 `X-Trim-Isadmin=true`；私有监听器从严格校验的 Host/Origin 推导真实飞牛访问源（不再受旧 TCP origin 白名单限制），TCP 端口仍保持原白名单并拒绝任何 `X-Trim-*` 头。
+- 静态页、API、事件轮询与 noVNC HTTP/WebSocket 均在 `/app/cainiao-warehouse` 同源路径下工作；仅网关响应注入 `<base>` 和前缀 bootstrap，Windows/LAN 适配器路径保持原样。
+- Socket 启动时区分活/陈旧/非 Socket，停止时按设备号与 inode 只删除本进程创建的 Socket。没有新增依赖、没有修改 ERP、真实数据、账号、定时任务、通知或版本号。
+- 本机定向测试：打包/入口 4 通过、1 个 Linux 专属跳过；网关、适配器、传输与运行时 39 通过、2 个 Linux 专属跳过。尚未运行真实飞牛容器或域名入口验收；本次未调用真实 NAS、未发送通知、未采集库存。实现与测试细节见 [fnos-unified-gateway.md](fnos-unified-gateway.md)。

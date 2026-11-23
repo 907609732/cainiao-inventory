@@ -1,6 +1,6 @@
 services:
   warehouse:
-    image: cainiao-warehouse:0.10.6
+    image: cainiao-warehouse:0.10.7
     pull_policy: never
     container_name: cainiao-warehouse
     restart: unless-stopped
@@ -23,6 +23,8 @@ services:
       CAINIAO_API_HOST: 0.0.0.0
       CAINIAO_API_PORT: "18762"
       CAINIAO_BROWSER_URL: http://127.0.0.1:6080
+      CAINIAO_GATEWAY_PREFIX: /app/cainiao-warehouse
+      CAINIAO_GATEWAY_SOCKET: /app-target/app.sock
       DISPLAY: ":99"
       HOME: /data/home
       XDG_CONFIG_HOME: /data/home/.config
@@ -31,6 +33,9 @@ services:
       BUSINESS_TIME_ZONE: Asia/Shanghai
     volumes:
       - "${TRIM_PKGVAR}:/data"
+      # fnOS unified-gateway socket lives in the app target directory.
+      # It must remain writable by TRIM_UID so the unprivileged service can create app.sock.
+      - "${TRIM_APPDEST}:/app-target"
     logging:
       driver: json-file
       options:

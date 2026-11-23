@@ -2,20 +2,35 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import http from 'node:http';
 import {chromium} from 'playwright';
 import {createNasRuntime} from '../nas/runtime.mjs';
 import {createNasGateway} from '../nas/server/gateway.mjs';
 
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'cainiao-nas-ui-'));
 const runtime=await createNasRuntime({dataDir:root});
-const gateway=createNasGateway({runtime,root,browserPasswordRequired:false});
+const gatewayMode=process.env.CAINIAO_TEST_UNIFIED_GATEWAY==='1';
+const prefix='/app/cainiao-warehouse';
+const socket=process.platform==='win32'?`\\\\.\\pipe\\cainiao-ui-${process.pid}`:path.join(root,'app.sock');
+const gateway=createNasGateway({runtime,root,browserPasswordRequired:false,...(gatewayMode?{gatewayPrefix:prefix,gatewaySocket:socket}:{})});
+let proxy;
 let browser;
 try {
  await gateway.start();await runtime.start();
+ let entry=gateway.address;
+ if(gatewayMode){
+  // Isolated fake fnOS transport: inject identity only at this private test proxy.
+  proxy=http.createServer((req,res)=>{
+   const upstream=http.request({socketPath:socket,path:req.url,method:req.method,headers:{...req.headers,'x-trim-userid':'1000','x-trim-isadmin':'true'}},response=>{res.writeHead(response.statusCode,response.headers);response.pipe(res);});
+   upstream.on('error',error=>res.destroy(error));req.pipe(upstream);
+  });
+  await new Promise(resolve=>proxy.listen(0,'127.0.0.1',resolve));
+  entry=`http://127.0.0.1:${proxy.address().port}${prefix}/`;
+ }
  browser=await chromium.launch({headless:true,...(process.platform==='win32'?{channel:'chrome'}:{})});
  const page=await browser.newPage();const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto(gateway.address);
+ await page.goto(entry);
 
 
  await page.locator('#warehouseLoading').waitFor({state:'hidden'});
@@ -50,5 +65,6 @@ try {
  console.log(JSON.stringify({ok:true,fourViews:true,emptyDataset:true,settingsPersisted:true,passwordNotReturned:true,erpReadonlyQuery:true,rendererErrors:errors,realMessagesSent:false}));
 } finally {
  await browser?.close();await runtime.close();await gateway.stop();
+ await new Promise(resolve=>proxy?proxy.close(resolve):resolve());
  const resolved=fs.realpathSync(root);assert.ok(resolved.startsWith(fs.realpathSync(os.tmpdir())+path.sep));fs.rmSync(resolved,{recursive:true,force:true});
 }

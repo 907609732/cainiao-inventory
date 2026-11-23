@@ -63,6 +63,7 @@ test('NAS authenticated visual HTTP and websocket traffic reaches private browse
  const login=await fetch(gateway.address+'/api/v1/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:'long-test-password'})});const cookie=login.headers.get('set-cookie').split(';')[0];
  assert.equal(await (await fetch(gateway.address+'/browser/vnc.html',{headers:{cookie}})).text(),'visual:/vnc.html');
  const value=await new Promise((resolve,reject)=>{const ws=new WebSocket(gateway.address.replace('http:','ws:')+'/browser/websockify',{headers:{cookie},origin:gateway.address});ws.on('open',()=>ws.send('echo'));ws.on('message',data=>{resolve(data.toString());ws.close();});ws.on('error',reject);});assert.equal(value,'echo');
+ const spoofed=await new Promise(resolve=>{const ws=new WebSocket(gateway.address.replace('http:','ws:')+'/browser/websockify',{headers:{cookie,'x-trim-userid':'1000','x-trim-isadmin':'true'},origin:gateway.address});ws.on('unexpected-response',(_,r)=>{resolve(r.statusCode);r.resume();ws.terminate();});ws.on('error',()=>{});ws.on('open',()=>{ws.close();resolve('open');});});assert.equal(spoofed,403);
 });
 
 test('NAS public bind and browser upstream require explicit safe boundaries',async()=>{

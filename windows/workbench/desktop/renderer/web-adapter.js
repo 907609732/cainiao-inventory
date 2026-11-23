@@ -2,6 +2,8 @@
 (() => {
   if (window.inventoryApp) return;
   const listeners = new Map();
+  const configuredPrefix = typeof window.__CAINIAO_GATEWAY_PREFIX__ === 'string' ? window.__CAINIAO_GATEWAY_PREFIX__ : '';
+  const gatewayPrefix = configuredPrefix.startsWith('/') && !configuredPrefix.startsWith('//') ? configuredPrefix.replace(/\/+$/, '') : '';
   let csrf = '', cursor = 0, connected = false, stopped = false;
   function status(message) {
     const show = () => {
@@ -13,7 +15,7 @@
     if (document.body) show(); else document.addEventListener('DOMContentLoaded', show, {once:true});
   }
   async function request(path, options = {}) {
-    const response = await fetch(path, {...options, credentials:'same-origin', cache:'no-store'});
+    const response = await fetch(gatewayPrefix + path, {...options, credentials:'same-origin', cache:'no-store'});
     const body = await response.json();
     if (!response.ok || body.ok === false) { const error = new Error(body.error?.message || '本机服务请求失败，请重新打开网页版。'); error.code = body.error?.code; throw error; }
     return body;

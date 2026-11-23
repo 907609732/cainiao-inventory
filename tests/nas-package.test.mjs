@@ -30,10 +30,13 @@ test('offline backup preserves dataset and key, rejects corrupt restore without 
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('package exposes gateway and host-loopback API only, isolates data and drops container privileges', async () => {
+test('package exposes LAN, host-loopback API and fnOS unified gateway without weakening container isolation', async () => {
   const compose = await readFile(new URL('../deploy/fnos/package/app/docker/docker-compose.yaml', import.meta.url), 'utf8');
   assert.match(compose, /127\.0\.0\.1:18762:18762/);
   assert.match(compose, /18761:18761/);
+  assert.match(compose, /\$\{TRIM_APPDEST\}:\/app-target/);
+  assert.match(compose, /CAINIAO_GATEWAY_PREFIX: \/app\/cainiao-warehouse/);
+  assert.match(compose, /CAINIAO_GATEWAY_SOCKET: \/app-target\/app\.sock/);
   assert.doesNotMatch(compose, /docker\.sock|privileged: true|network_mode: host|5900:|6080:/);
   assert.match(compose, /\$\{TRIM_PKGVAR\}:\/data/);
   assert.match(compose, /no-new-privileges/);
@@ -68,4 +71,14 @@ test('preinstall only validates; persistent initialization runs after fnOS creat
  assert.match(compose,/\$\{TRIM_PKGVAR\}:\/data/);
 });
 
-test('fnOS desktop opens an embedded application window',async()=>{const entry=JSON.parse(await readFile(new URL('../deploy/fnos/package/app/ui/config',import.meta.url),'utf8'));assert.equal(entry['.url']['cainiao-warehouse.main'].type,'iframe');});
+test('fnOS desktop opens the stable unified-gateway entry as an embedded application window',async()=>{
+ const entry=JSON.parse(await readFile(new URL('../deploy/fnos/package/app/ui/config',import.meta.url),'utf8'))['.url']['cainiao-warehouse.main'];
+ assert.equal(entry.type,'iframe');
+ assert.equal(entry.gatewayPrefix,'/app/cainiao-warehouse');
+ assert.equal(entry.gatewaySocket,'app.sock');
+ assert.equal(entry.url,'/app/cainiao-warehouse');
+ assert.equal(entry.protocol,undefined);
+ assert.equal(entry.port,undefined);
+ const manifest=await readFile(new URL('../deploy/fnos/package/manifest',import.meta.url),'utf8');
+ assert.match(manifest,/^service_port=18761$/m);
+});

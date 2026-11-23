@@ -1,6 +1,9 @@
 // NAS-only presentation adapter. Desktop renderer and Windows behavior stay intact.
 (() => {
   document.documentElement.dataset.platform = 'fnos';
+  const configuredPrefix = typeof window.__CAINIAO_GATEWAY_PREFIX__ === 'string' ? window.__CAINIAO_GATEWAY_PREFIX__ : '';
+  const gatewayPrefix = configuredPrefix.startsWith('/') && !configuredPrefix.startsWith('//') ? configuredPrefix.replace(/\/+$/, '') : '';
+  const browserPath = gatewayPrefix + '/browser/';
   const apply = () => {
     const api = window.inventoryApp;
     if (api) {
@@ -26,7 +29,7 @@
     const actions=document.querySelector('.hero-actions');
     if(actions&&!document.querySelector('#nasBrowserEntry')){
       const link=document.createElement('a');link.id='nasBrowserEntry';link.className='btn';
-      link.href='/browser/';link.target='_blank';link.rel='noopener noreferrer';
+      link.href=browserPath;link.target='_blank';link.rel='noopener noreferrer';
       link.addEventListener('click',async event=>{
         event.preventDefault();
         try {
@@ -34,7 +37,7 @@
           if(state.running&&state.runningKind!=='login'){
             window.alert('当前有云仓任务正在运行，请等待任务结束后再打开登录浏览器。');return;
           }
-          window.open('/browser/','_blank','noopener,noreferrer');
+          window.open(browserPath,'_blank','noopener,noreferrer');
           if(!state.running)void api.refreshLogin().catch(error=>window.alert('登录流程未完成：'+error.message));
         }catch(error){window.alert('无法打开登录浏览器：'+error.message);}
       });
