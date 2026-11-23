@@ -149,7 +149,7 @@ test('fnOS gateway browser HTTP and WebSocket stay on the prefix and require adm
  assert.equal(redirect.status,302);
  const location=new URL(redirect.headers.location,'https://nas.example.test');
  assert.equal(location.pathname,prefix+'/browser/vnc.html');
- assert.equal(location.searchParams.get('path'),prefix+'/browser/websockify');
+ assert.equal('/'+location.searchParams.get('path'),prefix+'/browser/websockify');
 
  const connected=await websocketConnect(socket,prefix+'/browser/websockify',{origin,headers:{host:'nas.example.test',cookie,...admin}});
  assert.equal(connected.status,101);connected.websocket.send('echo');assert.equal(await websocketMessage(connected.websocket),'echo');connected.websocket.terminate();

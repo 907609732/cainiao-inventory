@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-const image = 'cainiao-warehouse:0.10.8';
+const image = 'cainiao-warehouse:0.10.9';
 const suffix = `${process.env.GITHUB_RUN_ID || process.pid}-${process.env.GITHUB_RUN_ATTEMPT || '1'}`;
 const name = `cainiao-warehouse-ci-${suffix}`, volume = `${name}-data`;
 const dynamicName = `${name}-dynamic-uid`;
@@ -33,6 +33,7 @@ try {
   await healthy();
   const gatewayProbe='import http from "node:http";import fs from "node:fs";if(!fs.statSync("/app-target/app.sock").isSocket())throw Error("Missing gateway socket");await new Promise((resolve,reject)=>{const req=http.get({socketPath:"/app-target/app.sock",path:"/app/cainiao-warehouse/api/v1/session",headers:{host:"nas-gateway.example.test",origin:"https://nas-gateway.example.test","x-trim-userid":"1000","x-trim-isadmin":"true"}},res=>{let body="";res.on("data",c=>body+=c);res.on("end",()=>{if(res.statusCode!==200||!JSON.parse(body).csrf)reject(Error("Unified gateway failed: "+res.statusCode));else resolve();});});req.on("error",reject);});';
   docker(['exec', name, 'node', '--input-type=module', '-e', gatewayProbe]);
+  docker(['exec', name, 'node', 'scripts/fnos-gateway-browser-smoke.mjs']);
   docker(['exec', name, 'node', '--input-type=module', '-e', 'const http=await import("node:http");await new Promise((resolve,reject)=>http.get("http://127.0.0.1:18761/api/v1/session",{headers:{host:"warehouse.example.test"}},r=>{r.resume();if(r.statusCode!==200||!r.headers["set-cookie"]?.some(c=>c.includes("Secure")))reject(Error("Configured fnOS alias failed"));else resolve();}).on("error",reject));const r=await fetch("http://127.0.0.1:18761/api/v1/session");if(r.status!==200||!(await r.json()).csrf)throw Error("Direct browser access failed");if((await fetch("http://127.0.0.1:18762/api/v1/call/getInventory",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).status!==401)throw Error("API credential gate missing");']);
   const headedFixture = 'import fs from "node:fs";import {chromium} from "playwright";for(const key of ["XDG_CONFIG_HOME","XDG_CACHE_HOME"]){if(!process.env[key]?.startsWith("/data/home/"))throw new Error("Missing private writable browser directory");if(fs.statSync(process.env[key]).uid!==process.getuid())throw new Error("Browser directory owner mismatch");fs.accessSync(process.env[key],fs.constants.W_OK);}const browser=await chromium.launch({headless:false});try{const page=await browser.newPage();await page.setContent("<title>cainiao-headed-xvfb-fixture</title>");if(await page.title()!=="cainiao-headed-xvfb-fixture")throw new Error("Headed Xvfb browser fixture failed");}finally{await browser.close();}';
   docker(['exec', name, 'node', '--input-type=module', '-e', headedFixture]);

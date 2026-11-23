@@ -191,7 +191,7 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
  });
  async function proxyBrowser(req,reply,path,redirectPrefix=''){
   if(!browserUrl)throw error(503,'BROWSER_UNAVAILABLE');
-  if(path==='/browser/'){const websockify=redirectPrefix?`${redirectPrefix}/browser/websockify`:'browser/websockify';return reply.redirect(redirectPrefix+'/browser/vnc.html?autoconnect=true&path='+(redirectPrefix?encodeURIComponent(websockify):websockify));}
+  if(path==='/browser/'){const websockify=redirectPrefix?`${redirectPrefix.slice(1)}/browser/websockify`:'browser/websockify';return reply.redirect(redirectPrefix+'/browser/vnc.html?autoconnect=true&path='+(redirectPrefix?encodeURIComponent(websockify):websockify));}
   const suffix=path.slice('/browser'.length);if(suffix.includes('..')||suffix.includes('\\')||suffix.startsWith('//'))throw error(400,'INVALID_PATH');
   const response=await fetch(new URL(suffix,browserUrl),{redirect:'error'});reply.code(response.status).type(response.headers.get('content-type')||'application/octet-stream');return reply.send(Buffer.from(await response.arrayBuffer()));
  }
