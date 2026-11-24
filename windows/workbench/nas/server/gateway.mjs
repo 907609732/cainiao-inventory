@@ -19,7 +19,7 @@ const cookiesOf=req=>Object.fromEntries((req.headers.cookie||'').split(';').map(
 
 // Private Unix/pipe socket only: the host may be any real fnOS access host.
 // This deliberately does not reuse the public TCP origin whitelist, which stays strict.
-export function gatewayOrigin(req){
+export function gatewayOrigin(req,configuredOrigins=[]){
  const host=req.headers.host;
  if(typeof host!=='string'||!host||host.length>255||/[\s,;\\/@]/.test(host))throw error(403,'INVALID_HOST');
  const normalizedHost=host.toLowerCase();
@@ -30,6 +30,9 @@ export function gatewayOrigin(req){
  if(origin!==undefined){
   if(typeof origin!=='string'||origin==='null')throw error(403,'INVALID_ORIGIN');
   let parsedOrigin;try{parsedOrigin=new URL(origin);}catch{throw error(403,'INVALID_ORIGIN');}
+  // Only this authenticated Unix-socket hop may use an explicitly configured
+  // external origin when FN Connect rewrites the upstream Host or port.
+  if(configuredOrigins.includes(origin)&&['http:','https:'].includes(parsedOrigin.protocol)&&parsedOrigin.origin===origin)return {expected:origin,scheme:parsedOrigin.protocol.slice(0,-1)};
   const originPort=parsedOrigin.port||(parsedOrigin.protocol==='https:'?'443':'80');
   // fnOS 1.2 strips the external port from Host on its authenticated Unix hop.
   // Keep exact hostname/protocol checks; compare ports only when Host retains one.
@@ -60,9 +63,9 @@ export function gatewayPath(prefix,url){
 export function gatewayIdentity(headers){
  const uid=headers['x-trim-userid'];
  if(typeof uid!=='string'||!/^[A-Za-z0-9._:-]{1,128}$/.test(uid))throw error(401,'GATEWAY_IDENTITY_REQUIRED');
- if(String(headers['x-trim-isadmin']||'').toLowerCase()!=='true')throw error(403,'ADMIN_REQUIRED');
+ const isAdmin=String(headers['x-trim-isadmin']||'').toLowerCase()==='true';
  const username=typeof headers['x-trim-username']==='string'?headers['x-trim-username'].replace(/[\u0000-\u001f\u007f]/g,'').slice(0,128):'';
- return {uid,isAdmin:true,username};
+ return {uid,isAdmin,username};
 }
 export function rewriteGatewayHtml(html,prefix){
  const rewritten=String(html)
@@ -156,11 +159,13 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
    if(!['GET','POST','HEAD'].includes(req.method))throw error(405,'METHOD_NOT_ALLOWED');
    if(req.method==='POST'&&!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||''))throw error(415,'JSON_REQUIRED');
    let expected;
-   try { ({expected}=gatewayOrigin(req)); }
+   try { ({expected}=gatewayOrigin(req,[...(origin?[origin]:[]),...additionalOrigins])); }
    catch (failure) {
     const suppliedOrigin=req.headers.origin;
     const originKind=suppliedOrigin===undefined?'missing':suppliedOrigin==='null'?'null':suppliedOrigin.startsWith('https://')?'https':suppliedOrigin.startsWith('http://')?'http':'other';
-    reply.header('X-Cainiao-Gateway-Diagnostic',`${failure.code}; origin=${originKind}`);
+    const safeHost=String(req.headers.host||'').replace(/[^a-zA-Z0-9.:[\]-]/g,'').slice(0,255);
+    let originHost='';try{originHost=new URL(suppliedOrigin).host;}catch{}
+    reply.header('X-Cainiao-Gateway-Diagnostic',`${failure.code}; origin=${originKind}; host=${safeHost}; originHost=${originHost}`);
     throw failure;
    }
    const identity=gatewayIdentity(req.headers),internalPath=gatewayPath(fnosPrefix,req.url);
@@ -189,7 +194,7 @@ export function createNasGateway({runtime,root,host='127.0.0.1',port=0,origin,ad
   let identity,sessionValue;
   try{
    if(!req.headers.origin||!browserUrl||wsPath!==fnosPrefix+'/browser/websockify')throw error(403,'FORBIDDEN');
-   const {expected}=gatewayOrigin(req);
+   const {expected}=gatewayOrigin(req,[...(origin?[origin]:[]),...additionalOrigins]);
    if(req.headers.origin!==expected)throw error(403,'FORBIDDEN');
    identity=gatewayIdentity(req.headers);
    sessionValue=sessionFor({cookies},'nas_gateway_session');

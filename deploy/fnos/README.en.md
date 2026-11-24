@@ -2,20 +2,26 @@
 
 [简体中文（默认）](README.md) | **English** · [Home](../../README.en.md)
 
-Stable version **0.10.6** targets **x86-64 fnOS with Docker enabled**. App ID: `cainiao-warehouse`. The application, collection browser and schedules run on the NAS independently of ERP; the Windows client does not need to stay open.
+Stable version **0.10.17** targets **x86-64 fnOS with Docker enabled**. App ID: `cainiao-warehouse`. The application, collection browser and schedules run on the NAS independently of ERP; the Windows client does not need to stay open.
 
-[Download the FPK, matching image and checksums](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
+[Download the FPK, matching image and checksums](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17)
 
 ## Install or update
 
-1. Download `cainiao-warehouse-0.10.6-x86.fpk`, `cainiao-warehouse-0.10.6-image.tar.gz` and `SHA256SUMS.txt`. Verify SHA-256 and keep the installer/image versions matched.
-2. Import the image in fnOS Docker. CLI: `docker load --input cainiao-warehouse-0.10.6-image.tar.gz`. If the GUI only accepts `.tar`, decompress the archive to `.tar` first.
+1. Download `cainiao-warehouse-0.10.17-x86.fpk`, `cainiao-warehouse-0.10.17-image.tar.gz` and `SHA256SUMS.txt`. Verify SHA-256 and keep the installer/image versions matched.
+2. Import the image in fnOS Docker. CLI: `docker load --input cainiao-warehouse-0.10.17-image.tar.gz`. If the GUI only accepts `.tar`, decompress the archive to `.tar` first.
 3. Check that web port `18761` and host-loopback API port `18762` are available. Investigate conflicts without stopping unrelated services.
 4. Manually install the FPK in App Center. For an existing installation, update it while preserving its application data directory. Take a complete offline backup before upgrading.
 5. Confirm the access address in the wizard. Additional domains must be complete `https://` or `http://` origins without paths, separated by commas. Leaving this field blank during an upgrade preserves existing aliases.
 6. Open the fnOS desktop icon to use the embedded window, or visit `http://<NAS-address>:18761/`. Configure the Cainiao account, notification targets and browser login before enabling schedules.
 
-No separate warehouse administrator password is required. Exact Host/Origin checks, browser sessions and CSRF checks remain in place. Use a trusted LAN or an existing controlled fnOS entry. An allowed domain does not replace fnOS authentication or configure public routing, DNS or TLS.
+All signed-in fnOS users can access the shared warehouse. No separate warehouse administrator password is required. Exact Host/Origin checks, browser sessions and CSRF checks remain in place. Use a trusted LAN or an existing controlled fnOS entry. An allowed domain does not replace fnOS authentication or configure public routing, DNS or TLS.
+
+## Mobile remote access
+
+Open the warehouse from the fnOS app. If diagnostics report INVALID_ORIGIN, copy originHost and add its full origin in the application wizard, for example https://nas-app.example.net:12345. Separate multiple origins with commas and retain existing entries. Configured external origins are checked even when the forwarded Host is localhost. Update the configuration if the mobile entry address changes.
+
+Diagnostics support clipboard copying with a selectable text fallback. The yellow banner is hidden after a successful connection.
 
 ## Background jobs and notifications
 
@@ -61,8 +67,6 @@ Project uninstall hooks do not proactively delete data, backups, images or ERP f
 
 ## Build and verification
 
-Packaging reuses official fnpack, Node.js 24, Docker, Playwright Chromium, Xvfb and noVNC. No NAS-wide Node/Python or desktop-service installation is required. See [third-party notices](THIRD-PARTY.md).
+Version 0.10.17 builds Windows and Linux from the same source commit and provides a complete FPK and matching image. Build and installer acceptance results and file digests are recorded in the Release acceptance.json and SHA256SUMS.txt. Upgrades retain the original data directory, configured access origins and automatic-send settings.
 
-[The same-commit 0.10.6 build](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032) passed container, four-view UI, transport-boundary, restart and offline restore checks. Version 0.10.5 had already been installed on the authorized NAS with inventory, settings, dataset identity and schedules preserved. The formal release artifacts were not deployed again and did not trigger real business sends.
-
-Actions artifacts include `build.json`, `image-inspect.json` and build checksums. The stable Release provides the FPK, image, `SHA256SUMS.txt` and `acceptance.json`. [Deployment history (Chinese)](../../docs/fnos-deployment.md) retains earlier findings; consult the final entry for the relevant version.
+Actions artifacts include build.json, image-inspect.json and checksums. The [deployment record](../../docs/fnos-deployment.md) preserves historical evidence.

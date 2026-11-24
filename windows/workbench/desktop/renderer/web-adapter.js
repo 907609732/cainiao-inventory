@@ -5,24 +5,49 @@
   const configuredPrefix = typeof window.__CAINIAO_GATEWAY_PREFIX__ === 'string' ? window.__CAINIAO_GATEWAY_PREFIX__ : '';
   const gatewayPrefix = configuredPrefix.startsWith('/') && !configuredPrefix.startsWith('//') ? configuredPrefix.replace(/\/+$/, '') : '';
   let csrf = '', cursor = 0, connected = false, stopped = false;
-  let diagnosis = '';
+  let diagnosis = '', displayedStatus = '', displayedDiagnosis = '';
   function status(message) {
     const show = () => {
       let banner = document.getElementById('localWebStatus');
       if (!banner) { banner = document.createElement('div'); banner.id = 'localWebStatus'; banner.className = 'local-web-status'; banner.setAttribute('role', 'status'); document.body.prepend(banner); }
+      banner.hidden = !message;
+      const detail = message ? diagnosis : '';
+      if (message === displayedStatus && detail === displayedDiagnosis) return;
+      displayedStatus = message;
+      displayedDiagnosis = detail;
+      const existingLog = banner.querySelector('textarea');
+      const existingMessage = banner.firstChild;
+      if (message && detail && existingLog && existingMessage?.nodeType === Node.TEXT_NODE) {
+        existingMessage.textContent = message;
+        // Keep the displayed snapshot stable while the user is selecting it.
+        if (document.activeElement !== existingLog) existingLog.value = detail;
+        return;
+      }
       banner.textContent = message; banner.hidden = !message;
-      if (message && diagnosis && gatewayPrefix) {
+      if (detail) {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
         summary.textContent = '查看并复制诊断';
-        const log = document.createElement('pre');
-        log.textContent = diagnosis;
-        log.style.whiteSpace = 'pre-wrap';
+        const log = document.createElement('textarea');
+        log.value = detail;
+        log.readOnly = true;
+        log.rows = 7;
+        log.style.width = '100%';
+        log.setAttribute('aria-label', '连接诊断');
         const copy = document.createElement('button');
         copy.textContent = '复制诊断';
         copy.onclick = async () => {
-          try { await navigator.clipboard.writeText(log.textContent); copy.textContent = '已复制'; }
-          catch { const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(log); selection.removeAllRanges(); selection.addRange(range); }
+          try {
+            await navigator.clipboard.writeText(log.value);
+            copy.textContent = '已复制';
+          } catch {
+            log.focus();
+            log.select();
+            log.setSelectionRange(0, log.value.length);
+            let copied = false;
+            try { copied = document.execCommand('copy'); } catch {}
+            copy.textContent = copied ? '已复制' : '请长按诊断文字复制';
+          }
         };
         details.append(summary, copy, log);
         banner.append(details);
@@ -39,8 +64,10 @@
     let response;
     try { response = await fetch(gatewayPrefix + path, {...options, credentials:'same-origin', cache:'no-store'}); }
     catch (error) { record('网络请求失败'); throw error; }
-    if (gatewayPrefix && !response.ok) record('HTTP '+response.status, response.headers.get('X-Cainiao-Gateway-Diagnostic') || '');
-    const body = await response.json();
+    if (!response.ok) record('HTTP '+response.status, response.headers.get('X-Cainiao-Gateway-Diagnostic') || '');
+    let body;
+    try { body = await response.json(); }
+    catch { record('HTTP '+response.status, '网关返回了非 JSON 响应'); throw new Error('网关返回了无法识别的响应（HTTP '+response.status+'）'); }
     if (!response.ok || body.ok === false) { const error = new Error(body.error?.message || '本机服务请求失败，请重新打开网页版。'); error.code = body.error?.code; throw error; }
     return body;
   }

@@ -7,12 +7,19 @@ function fixture({hash='',existing,fail=false,events=[],taskStatuses,insecureHtt
  const calls=[],timers=[],banners=[];let counter=0;
  const window={inventoryApp:existing,location:{hash,pathname:'/renderer/index.html',search:''},history:{replaceState(...args){calls.push(['history',...args]);}},crypto:insecureHttp?{getRandomValues:bytes=>{bytes.fill(++counter);return bytes;}}:{randomUUID:()=>`request-${++counter}`} ,addEventListener(){}};
  if(gatewayPrefix)window.__CAINIAO_GATEWAY_PREFIX__=gatewayPrefix;
- const document={readyState:'complete',getElementById:()=>null,createElement:()=>({setAttribute(){},textContent:'',hidden:false}),body:{prepend(el){banners.push(el);}},addEventListener(){}};
+ const document={readyState:'complete',getElementById:id=>banners.find(el=>el.id===id)||null,createElement:()=>({style:{},setAttribute(){},querySelector:()=>null,append(){},textContent:'',hidden:false}),body:{prepend(el){banners.push(el);}},addEventListener(){}};
  const fetch=async(url,options={})=>{calls.push([url,options]);if(fail)throw Error('offline');if(taskStatuses && (url.endsWith('/sendDateException') || url.includes('/tasks/'))) return {ok:true,json:async()=>({ok:true,value:url.includes('/tasks/')?taskStatuses.shift():{taskId:'receipt-1',status:'running'}})};return {ok:true,json:async()=>url.includes('/session')?{csrf:'csrf-test'}:url.includes('/events')?{cursor:7,events}:{ok:true,value:{operation:url}}};};
  vm.runInNewContext(source,{window,document,location:window.location,history:window.history,crypto:window.crypto,URLSearchParams,fetch,setTimeout:fn=>timers.push(fn),clearTimeout(){},console});
  return {window,calls,timers,banners};
 }
 test('desktop preload remains untouched',()=>{const existing={desktop:true};const f=fixture({existing});assert.equal(f.window.inventoryApp,existing);assert.equal(f.calls.length,0);});
+test('successful initial connection hides the empty status banner',async()=>{
+ const f=fixture();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(f.banners.length,1);
+ assert.equal(f.banners[0].hidden,true);
+ assert.equal(f.banners[0].textContent,'');
+});
 test('fragment exchanges immediately and methods synchronously await session',async()=>{const f=fixture({hash:'#token=once'});assert.ok(f.window.inventoryApp);await f.window.inventoryApp.runNow();assert.equal(f.calls[0][0],'history');assert.equal(f.calls[1][1].method,'POST');assert.deepEqual(JSON.parse(f.calls[1][1].body),{token:'once'});const c=f.calls.find(c=>c[0].endsWith?.('/runNow'));assert.equal(c[1].headers['x-csrf-token'],'csrf-test');assert.equal(JSON.parse(c[1].body).confirmed,true);assert.ok(c[1].headers['Idempotency-Key']);});
 test('reload resumes cookie; secrets never requested and blanks preserve proxy',async()=>{const f=fixture();assert.deepEqual(Object.keys(await f.window.inventoryApp.getEditableSecrets()),[]);await f.window.inventoryApp.saveSettingsSection({section:'robot',secrets:{telegramProxyUrl:'',emailPassword:'new'}});assert.equal(f.calls.find(c=>c[0]==='/api/v1/session')[1].method,'GET');const c=f.calls.find(c=>c[0].endsWith?.('/saveSettingsSection'));assert.deepEqual(JSON.parse(c[1].body).secrets,{emailPassword:'new'});});
 test('events deliver callbacks and schedule polling',async()=>{const f=fixture({events:[{type:'inventory:state',data:{running:true}}]});let value;f.window.inventoryApp.onState(v=>value=v);await f.window.inventoryApp.getState();await new Promise(r=>setImmediate(r));assert.equal(value.running,true);assert.ok(f.timers.length);});

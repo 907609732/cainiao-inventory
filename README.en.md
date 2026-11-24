@@ -4,17 +4,17 @@
 
 [**Releases · Downloads**](https://github.com/907609732/cainiao-inventory/releases)
 
-Cainiao Cloud Warehouse is an independent inventory application for **Windows x64** and **fnOS x86-64**. It does not require an ERP or the former e-commerce workbench. The current stable release is **0.10.6**.
+Cainiao Cloud Warehouse is an independent inventory application for **Windows x64** and **fnOS x86-64**. It does not require an ERP or the former e-commerce workbench. The current stable release is **0.10.17**.
 
 > Versions 0.9.3 and 0.9.4 were withdrawn because their installation identity conflicted with the old workbench. Do not install them or run their uninstallers on a computer affected by that conflict; back up and restore the workbench first.
 
 ## Download
 
-- [Windows 0.10.6 installer](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.6/CainiaoWarehouse-Setup-0.10.6-x64.exe)
-- [fnOS installer, matching container image, checksums and acceptance record](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
+- [Windows 0.10.17 installer](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.17/CainiaoWarehouse-Setup-0.10.17-x64.exe)
+- [fnOS installer, matching container image, checksums and acceptance record](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17)
 - [fnOS installation guide](deploy/fnos/README.en.md)
 
-Version 0.10.6 preserves full product names and wraps them across lines. The stock-coverage header uses two lines; DingTalk SKUs and stock/sales quantities use smaller text while keeping all digits and alert values. fnOS retains its embedded desktop window and explicitly configured application domains.
+Inventory reports preserve full product names and wrap them across lines. The stock-coverage header uses two lines; DingTalk SKUs and stock/sales quantities use smaller text while keeping all digits and alert values. fnOS uses the official unified gateway in an embedded desktop window. All signed-in fnOS users can access the shared warehouse. Configure exact origins for mobile remote entry points. Settings combine maintenance and updates. Diagnostics support clipboard and manual copying, and the status banner stays hidden after a successful connection.
 
 ## Features
 
@@ -90,7 +90,16 @@ npm run dev
 
 `npm test` runs regression checks, `npm run test:ui` checks the desktop UI, and `npm run build` builds the installer. Ordinary launches use the standalone data directory; automated tests use temporary ledgers. See [Windows development](windows/README.en.md).
 
-## Release verification — 0.10.6
+## Release verification — 0.10.17
+
+- Fixes external-origin validation through the fnOS unified gateway, including explicitly configured mobile remote entry points.
+- All authenticated fnOS users can access shared inventory, sales, settings and the collection browser. Sessions remain bound to each fnOS user UID.
+- Fixes diagnostic copying and the empty yellow status bar. Settings combine maintenance and updates.
+- Removes obsolete workbench build scripts and aligns Windows and fnOS versions in complete release builds.
+- Same-commit build, installer acceptance, file checksums and verification scope are recorded in the Release acceptance.json. Request replay and actual phone acceptance are recorded separately.
+- [Installers and acceptance files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17).
+
+### Historical 0.10.6 verification
 
 Source commit: `24b8d5d79a879522f86223f8704753276fbb14c2`.
 

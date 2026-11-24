@@ -6,7 +6,7 @@ import {mkdtemp,rm,writeFile,stat,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {WebSocket,WebSocketServer} from 'ws';
-import {createNasGateway,gatewayOrigin} from '../nas/server/gateway.mjs';
+import {createNasGateway,gatewayOrigin,gatewayIdentity} from '../nas/server/gateway.mjs';
 
 const prefix='/app/cainiao-warehouse';
 const origin='https://nas.example.test';
@@ -21,6 +21,20 @@ function request(socket,path,{method='GET',headers={},body}={}){
  });
 }
 const json=result=>JSON.parse(result.text);
+test('all authenticated fnOS users can access the shared warehouse',()=>{
+ for(const flag of ['true','false',undefined]){
+  const identity=gatewayIdentity({'x-trim-userid':'2001','x-trim-username':'member',...(flag?{'x-trim-isadmin':flag}:{})});
+  assert.equal(identity.uid,'2001');assert.equal(identity.isAdmin,flag==='true');
+ }
+ assert.throws(()=>gatewayIdentity({'x-trim-isadmin':'false'}));
+});
+test('configured FN Connect origin survives upstream Host rewriting',()=>{
+ const headers={host:'localhost',origin:'https://nas.example.test'};
+ assert.throws(()=>gatewayOrigin({headers}));
+ assert.equal(gatewayOrigin({headers},['https://nas.example.test']).expected,'https://nas.example.test');
+ assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'https://evil.invalid'}},['https://nas.example.test']));
+ assert.throws(()=>gatewayOrigin({headers:{...headers,origin:'null'}},['https://nas.example.test']));
+});
 test('fnOS strips Host port while preserving external Origin and forwarded protocol',()=>{
  for(const origin of ['http://192.168.1.100:5666','https://nas.example.test:7443']){
   const url=new URL(origin),headers={host:url.hostname,origin,'x-forwarded-proto':url.protocol.slice(0,-1)};
@@ -120,7 +134,16 @@ test('fnOS gateway serves the same UI/API under its prefix and rejects untrusted
  assert.equal((await request(socket,prefix,{headers:{...admin,host:'evil.com@nas.example.test'}})).status,403);
  assert.equal((await request(socket,prefix,{headers:{...admin,'sec-fetch-site':'cross-site'}})).status,403);
  assert.equal((await request(socket,prefix,{headers:{'x-trim-isadmin':'true'}})).status,401);
- assert.equal((await request(socket,prefix,{headers:{...admin,'x-trim-isadmin':'false'}})).status,403);
+ const memberHeaders={...admin,'x-trim-userid':'2001','x-trim-isadmin':'false'};
+ const memberPage=await request(socket,prefix,{headers:memberHeaders});
+ assert.equal(memberPage.status,200);
+ const memberCookie=memberPage.headers['set-cookie'][0].split(';')[0];
+ const memberSession=await request(socket,prefix+'/api/v1/session',{headers:{...memberHeaders,cookie:memberCookie,origin}});
+ assert.equal(memberSession.status,200);
+ const memberRead=await request(socket,prefix+'/api/v1/call/getInventory',{method:'POST',headers:{...memberHeaders,cookie:memberCookie,origin,'content-type':'application/json','x-csrf-token':json(memberSession).csrf},body:{}});
+ assert.equal(memberRead.status,200);
+ const memberSettings=await request(socket,prefix+'/api/v1/call/saveSettings',{method:'POST',headers:{...memberHeaders,cookie:memberCookie,origin,'content-type':'application/json','x-csrf-token':json(memberSession).csrf,'idempotency-key':'member-settings'},body:{confirmed:true}});
+ assert.equal(memberSettings.status,200);
 
  const spoofed=await fetch(gateway.address+'/api/v1/health',{headers:{'x-trim-userid':'1000','x-trim-isadmin':'true'}});
  assert.equal(spoofed.status,403);assert.equal((await spoofed.json()).error.code,'GATEWAY_HEADERS_FORBIDDEN');
@@ -134,12 +157,12 @@ test('fnOS gateway serves the same UI/API under its prefix and rejects untrusted
  assert.match(directHtml,/src="nas-ui-adapter\.js"><\/script><script src="renderer\.js">/);
 });
 
-test('fnOS gateway browser HTTP and WebSocket stay on the prefix and require admin identity',{timeout:30000},async t=>{
+test('fnOS gateway browser HTTP and WebSocket require authenticated identity',{timeout:30000},async t=>{
  const backend=http.createServer((req,res)=>res.end('visual:'+req.url));
  const sockets=new WebSocketServer({server:backend});sockets.on('connection',socket=>socket.on('message',data=>socket.send(data)));
  await new Promise(resolve=>backend.listen(0,'127.0.0.1',resolve));
  const root=await mkdtemp(join(tmpdir(),'nas-gateway-browser-')),socket=socketPath(root,'browser.sock');
- const gateway=createNasGateway({runtime:{identity:{datasetId:'browser-dataset',version:'test'},dispatch:async()=>null},root,port:0,apiPort:0,browserPasswordRequired:false,browserUrl:'http://127.0.0.1:'+backend.address().port,gatewayPrefix:prefix,gatewaySocket:socket});
+ const gateway=createNasGateway({runtime:{identity:{datasetId:'browser-dataset',version:'test'},dispatch:async()=>null},root,port:0,apiPort:0,browserPasswordRequired:false,browserUrl:'http://127.0.0.1:'+backend.address().port,gatewayPrefix:prefix,gatewaySocket:socket,additionalOrigins:['https://mobile.example.test:33811']});
  await gateway.start();t.after(async()=>{await gateway.stop();sockets.close();await new Promise(resolve=>backend.close(resolve));await rm(root,{recursive:true,force:true});});
 
  const page=await request(socket,prefix+'/browser/vnc.html',{headers:{...admin,origin}});
@@ -154,7 +177,11 @@ test('fnOS gateway browser HTTP and WebSocket stay on the prefix and require adm
  const connected=await websocketConnect(socket,prefix+'/browser/websockify',{origin,headers:{host:'nas.example.test',cookie,...admin}});
  assert.equal(connected.status,101);connected.websocket.send('echo');assert.equal(await websocketMessage(connected.websocket),'echo');connected.websocket.terminate();
 
- const rejected=await websocketConnect(socket,prefix+'/browser/websockify',{origin,headers:{host:'nas.example.test',cookie,'x-trim-userid':'1000'}});
+ const memberSocket=await websocketConnect(socket,prefix+'/browser/websockify',{origin,headers:{host:'nas.example.test',cookie,'x-trim-userid':'1000','x-trim-isadmin':'false'}});
+ assert.equal(memberSocket.status,101);memberSocket.websocket.terminate();
+ const mobileSocket=await websocketConnect(socket,prefix+'/browser/websockify',{origin:'https://mobile.example.test:33811',headers:{host:'localhost',cookie,...admin}});
+ assert.equal(mobileSocket.status,101);mobileSocket.websocket.terminate();
+ const rejected=await websocketConnect(socket,prefix+'/browser/websockify',{origin,headers:{host:'nas.example.test',cookie}});
  assert.equal(rejected.status,403);
  const wrongOrigin=await websocketConnect(socket,prefix+'/browser/websockify',{origin:'https://evil.invalid',headers:{host:'nas.example.test',cookie,...admin}});
  assert.equal(wrongOrigin.status,403);

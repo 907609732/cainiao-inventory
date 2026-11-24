@@ -2,20 +2,26 @@
 
 **简体中文（默认）** | [English](README.en.md) · [返回首页](../../README.md)
 
-当前正式版 **0.10.6**，适用于 **x86-64 飞牛 fnOS + Docker**。应用 ID 为 `cainiao-warehouse`，与 ERP 独立部署。界面、浏览器采集和定时任务在 NAS 后台运行，Windows 客户端无需保持开启。
+当前正式版 **0.10.17**，适用于 **x86-64 飞牛 fnOS + Docker**。应用 ID 为 `cainiao-warehouse`，与 ERP 独立部署。界面、浏览器采集和定时任务在 NAS 后台运行，Windows 客户端无需保持开启。
 
-[下载正式安装包、镜像及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6)
+[下载正式安装包、镜像及校验文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17)
 
 ## 安装与升级
 
-1. 下载配套的 `cainiao-warehouse-0.10.6-x86.fpk`、`cainiao-warehouse-0.10.6-image.tar.gz` 和 `SHA256SUMS.txt`，核对文件 SHA-256。不能混用其他版本镜像。
-2. 在飞牛 Docker 中导入该镜像。命令行可用 `docker load --input cainiao-warehouse-0.10.6-image.tar.gz`；如果图形界面只接受 `.tar`，先将 `.tar.gz` 解压为 `.tar` 再导入。
+1. 下载配套的 `cainiao-warehouse-0.10.17-x86.fpk`、`cainiao-warehouse-0.10.17-image.tar.gz` 和 `SHA256SUMS.txt`，核对文件 SHA-256。不能混用其他版本镜像。
+2. 在飞牛 Docker 中导入该镜像。命令行可用 `docker load --input cainiao-warehouse-0.10.17-image.tar.gz`；如果图形界面只接受 `.tar`，先将 `.tar.gz` 解压为 `.tar` 再导入。
 3. 确认网页端口 `18761`、宿主回环 API 端口 `18762` 未被其他服务占用。不要停止其他服务来腾出端口，应先核查冲突。
 4. 在应用中心手动安装 FPK；已有菜鸟云仓时选择更新，保留原应用数据目录。升级前先做完整离线备份。
 5. 在向导中确认访问地址。额外域名填写完整 `https://` 或 `http://` 地址，不带路径；多个地址用逗号分隔。升级时留空会保留已有域名配置。
 6. 双击飞牛桌面的菜鸟云仓图标，会在内嵌窗口打开。也可通过 `http://<NAS地址>:18761/` 访问。首次配置菜鸟账号、通知渠道及登录态，再按需启用自动任务。
 
-应用不要求新建云仓管理员密码。浏览器保留精确 Host/Origin、会话及 CSRF 校验；请通过可信内网或已有受控飞牛入口访问。域名白名单不会替代飞牛自身的登录认证，也不会自动配置外网代理、DNS 或 TLS。
+所有已登录的飞牛账号均可访问共享云仓，应用不要求新建云仓管理员密码。浏览器保留精确 Host/Origin、会话及 CSRF 校验；请通过可信内网或已有受控飞牛入口访问。域名白名单不会替代飞牛自身的登录认证，也不会自动配置外网代理、DNS 或 TLS。
+
+## 手机远程访问
+
+从飞牛 App 打开云仓。若诊断显示 INVALID_ORIGIN，展开诊断并复制 originHost，在应用更新或配置向导的“额外访问地址”中添加完整来源，例如 https://nas-app.example.net:12345。多个入口用逗号分隔，保留已有入口。转发 Host 为 localhost 时仍按已配置的外部来源校验。手机入口地址变化后需更新配置。
+
+诊断优先复制到剪贴板，失败时可长按只读文本框复制；页面连接正常后自动隐藏黄色提示栏。
 
 ## 后台任务与通知
 
@@ -61,8 +67,6 @@ node scripts/fnos-backup.mjs restore /absolute/private/backup /absolute/app/data
 
 ## 构建与验收
 
-复用飞牛官方 fnpack、Node.js 24、Docker、Playwright Chromium、Xvfb 和 noVNC；无需在 NAS 系统另装 Node/Python 或桌面服务。依赖许可见 [THIRD-PARTY.md](THIRD-PARTY.md)。
+0.10.17 从同一源码提交构建 Windows 与 Linux，提供完整 FPK 和配套镜像。构建、安装验收和文件摘要见正式 Release 的 acceptance.json 和 SHA256SUMS.txt。升级保留原应用数据目录、已配置的访问来源及自动发送设置。
 
-[0.10.6 同提交构建](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032) 已通过容器、四页界面、传输边界、重启与离线恢复检查。此前已在授权 NAS 实际更新到 0.10.5，库存、设置、独立数据集和自动任务保持一致；本次正式产物没有再次部署或触发真实业务发送。
-
-Actions 产物包含 `build.json`、`image-inspect.json` 和构建摘要；正式 Release 提供 FPK、镜像、`SHA256SUMS.txt` 与 `acceptance.json`。[详细部署验收记录](../../docs/fnos-deployment.md)保留历史过程，早期未完成项以最后对应版本的记录为准。
+Actions 产物包含 build.json、image-inspect.json 和构建摘要。[详细部署验收记录](../../docs/fnos-deployment.md)保留历史过程。

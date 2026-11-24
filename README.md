@@ -6,15 +6,15 @@
 
 > **0.9.3、0.9.4 已撤回，请勿继续安装。** 旧包复用了电商工作台的安装身份，存在覆盖风险。已发生覆盖时不要直接运行旧卸载程序，应先备份并恢复工作台。
 
-当前正式版为 **0.10.6**，提供 Windows x64 和飞牛 x86-64 安装包。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
+当前正式版为 **0.10.17**，提供 Windows x64 和飞牛 x86-64 安装包。菜鸟云仓与五成电子商务工作台是两款独立软件，分别安装、配置和卸载。
 
 设置页集中维护与更新，并新增飞书、企业微信、邮箱和 Telegram 多渠道通知，支持同时启用；日期偏旧但其他校验通过时，可二次确认后[特殊发送](docs/date-exception-send.md)。见[配置及验证范围](docs/notifications.md)。
 
-0.10.6 的通知报告保留完整货品名称并换行，表头“可售 / 天数”分两行；钉钉中的 SKU 和库存/销量使用小字号，数字和预警保留完整。飞牛桌面内嵌打开，支持配置应用域名、后台定时任务及按需显示已保存密钥。Windows 提供 APP、网页版和 AI 接口。本文的英文版是项目文档翻译，不代表软件界面已支持英文切换。
+通知报告保留完整货品名称并换行，表头“可售 / 天数”分两行；钉钉中的 SKU 和库存/销量使用小字号，数字和预警保留完整。飞牛通过官方统一网关在桌面内嵌打开，所有已登录账号均可访问共享云仓；手机远程入口可配置精确来源地址。设置页合并维护、版本与更新，诊断支持一键复制及长按复制，正常连接时隐藏提示栏。Windows 提供 APP、网页版和 AI 接口。本文的英文版是项目文档翻译，不代表软件界面已支持英文切换。
 
 ## 下载
 
-[下载 0.10.6 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.6/CainiaoWarehouse-Setup-0.10.6-x64.exe) · [飞牛安装包与配套镜像](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6) · [飞牛安装说明](deploy/fnos/README.md)
+[下载 0.10.17 Windows x64 安装器](https://github.com/907609732/cainiao-inventory/releases/download/v0.10.17/CainiaoWarehouse-Setup-0.10.17-x64.exe) · [飞牛安装包与配套镜像](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17) · [飞牛安装说明](deploy/fnos/README.md)
 
 ## 独立安装与数据
 
@@ -86,7 +86,16 @@ npm run dev
 
 根目录 `npm test` 运行回归测试，`npm run test:ui` 检查独立界面，`npm run build` 生成安装器。普通启动使用云仓独立数据目录；自动化测试使用临时账本。
 
-## 0.10.6 发布与验证
+## 0.10.17 发布与验证
+
+- 修复飞牛统一网关的外部来源校验，支持已配置的手机远程入口；安装或升级向导可填写完整来源地址。
+- 所有已登录飞牛账号均可使用共享库存、销量、设置和采集浏览器，会话按飞牛用户 UID 隔离。
+- 修复诊断复制失败和空白黄色提示条，精简云仓设置，合并维护与更新入口。
+- 清理废弃的工作台构建脚本，Windows 与飞牛统一版本号，使用完整镜像构建发布。
+- 同提交构建、安装验收、校验摘要和实际验证范围见 Release 中的 acceptance.json。手机请求参数回放与手机真机验收分别记录。
+- [正式安装包与验收文件](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17)。
+
+### 0.10.6 历史验证
 
 - 正式源码：`24b8d5d79a879522f86223f8704753276fbb14c2`。
 - [Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43260024922)、[Windows 安装包验收](https://github.com/907609732/cainiao-inventory/actions/runs/43260030224)、[飞牛构建检查](https://github.com/907609732/cainiao-inventory/actions/runs/43260025032)。安装测试使用虚构数据，覆盖全新安装、0.10.5 升级、重复安装、独立卸载身份、数据和设置保留。

@@ -2,7 +2,7 @@
 
 [简体中文（默认）](README.md) | **English** · [Home](../README.en.md)
 
-Stable version: **0.10.6**. [Installer and verification files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.6). The standalone application does not require ERP. APP, browser and AI access share one backend. Prefer Node.js 24, matching release CI.
+Stable version: **0.10.17**. [Installer and verification files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17). The standalone application does not require ERP. APP, browser and AI access share one backend. Prefer Node.js 24, matching release CI.
 
 Versions 0.9.3 and 0.9.4 were withdrawn because of installation-identity conflicts. If the old workbench was overwritten, restore it before installing a corrected version; do not run the withdrawn uninstallers.
 
@@ -28,9 +28,9 @@ npm run test:ui
 npm run warehouse:build -- --publish never
 ```
 
-Output: `dist/CainiaoWarehouse-Setup-0.10.6-x64.exe`, with `latest.yml` and the differential-update index. The update repository is `907609732/cainiao-inventory`. Building does not publish automatically. Do not inject personal GitHub credentials. Check the version, file hashes, update source and source commit before publication.
+Output: `dist/CainiaoWarehouse-Setup-0.10.17-x64.exe`, with `latest.yml` and the differential-update index. The update repository is `907609732/cainiao-inventory`. Building does not publish automatically. Do not inject personal GitHub credentials. Check the version, file hashes, update source and source commit before publication.
 
-[Windows CI](https://github.com/907609732/cainiao-inventory/actions/runs/43260024922) and [same-run installer acceptance](https://github.com/907609732/cainiao-inventory/actions/runs/43260030224) passed. Checks cover fresh installation, upgrade from 0.10.5, reinstall, separate uninstall identity, synthetic inventory/settings preservation and shared APP/web backend. The old workbench baseline download was unavailable; coexistence was not retested for this release. Real platform collection, delivery and ledger migration are outside this release test. The installer is not Authenticode-signed.
+Build, fresh-install and upgrade-from-0.10.6 results for version 0.10.17 are recorded in the [Release acceptance files](https://github.com/907609732/cainiao-inventory/releases/tag/v0.10.17). The installer is not Authenticode-signed.
 
 ## Source and data boundaries
 
@@ -43,19 +43,6 @@ npm --prefix windows/workbench run web -- --user-data-dir=C:\Temp\CainiaoWebDemo
 ```
 
 See the [local web/API reference (Chinese)](../docs/local-web.md).
-
-## Optional ERP extension integration
-
-These retained adapters are for existing ERP build tooling; independent installation and development do not require them. Signed extensions require external Ed25519 keys and a compatible host. Never commit signing keys.
-
-```powershell
-node scripts/build-windows.mjs
-node scripts/build-windows.mjs --from-receipt
-```
-
-The repositories are expected side by side; use `--erp=<absolute-ERP-path>` for another location. `workbench/scripts/workbench-build.mjs` and `legacy-suite-build.mjs` remain referenced integration adapters.
-
-Extension artifacts are written to `release/windows/<tag>/`. Tags use `warehouse-<host-version>-<manifest-digest>`, separate from standalone `v0.10.5` releases. Confirm host scope and manifest digest from the actual build receipt. A successful extension build does not prove installation or business-data migration.
 
 ## Public UI demo
 

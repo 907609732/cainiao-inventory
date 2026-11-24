@@ -1,6 +1,6 @@
 # 当前软件架构
 
-本文对应 Windows 云仓 0.9.5，本仓库只维护 Windows 版本。
+本文对应菜鸟云仓 0.10.17，支持 Windows 桌面、本机网页和飞牛 fnOS。
 
 ## Windows 主链路
 
@@ -12,7 +12,7 @@
 - 任务、配置和数据位置：`windows/workbench/desktop/shared`。
 - 云仓受控业务接口：`windows/workbench/desktop/modules/cloud-control.mjs`、`desktop/workbench/warehouse-agent*.mjs`。
 - 安装器：`windows/workbench/build/electron-builder.config.cjs`。
-- 工作台签名扩展：仓库根目录 `scripts/build-windows.mjs`，依赖外部 ERP 工具链。
+- 飞牛：`windows/workbench/nas` 提供后台、统一网关和 CLI/MCP，`deploy/fnos` 提供独立安装包。
 
 ## 数据边界
 
