@@ -776,7 +776,7 @@ async function refreshLocalAccess() {
 }
 byId('openWebHeader').classList.toggle('hidden', managedWarehouse || location.protocol !== 'file:');
 byId('openWebHeader').addEventListener('click',async()=>{
-  const button=byId(id); button.disabled=true;
+  const button=byId('openWebHeader'); button.disabled=true;
   try {await api.openWeb();}
   catch(error) {byId('localAccessMessage').textContent=error.message; appendLog({line:`打开网页版失败：${error.message}`});}
   finally {button.disabled=false;}

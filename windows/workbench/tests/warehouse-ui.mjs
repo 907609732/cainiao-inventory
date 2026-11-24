@@ -31,9 +31,12 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.waitForFunction(() => !!window.inventoryApp);
   await page.waitForLoadState('domcontentloaded');
+  await page.locator('#warehouseLoading').waitFor({state:'detached'});
   if (!managed) {
     await app.evaluate(({shell}) => { globalThis.openedWebUrl=''; shell.openExternal=async url=>{globalThis.openedWebUrl=url;}; });
     await page.locator('#openWebHeader').click();
+    await page.locator('#openWebHeader').waitFor({state:'visible'});
+    await page.waitForFunction(()=>!document.getElementById('openWebHeader').disabled);
     assert.match(await app.evaluate(()=>globalThis.openedWebUrl), /^http:\/\/127\.0\.0\.1:\d+\//);
   }
   assert.equal(await page.title(), managed ? '云仓同步 · 五成电子商务工作台' : '菜鸟云仓');
@@ -53,13 +56,16 @@ try {
   assert.equal(await page.locator('[data-managed-only]').isVisible(), managed);
   assert.equal(await page.locator('#featureHelpSettings, #featureHelpDialog, #featureManualButton').count(), 0);
   assert.equal(await page.locator('#maintenanceCard').count(), 1);
-  for (const id of ['loginState','updateState','aboutVersion','refreshLogin','openData','openLogs','checkUpdate','installUpdate','openReleaseNotes']) {
+  for (const id of ['updateState','aboutVersion','openData','openLogs','checkUpdate','installUpdate']) {
     assert.equal(await page.locator('#maintenanceCard #'+id).count(), 1, id);
   }
   assert.equal(await page.locator('#changelogList, #aboutBuild, #aboutChannel, #updateCredentialState').count(), 0);
   assert.equal(await page.locator('#settingsLinks').evaluate(el=>el===el.parentElement.lastElementChild), true);
   assert.equal(await page.locator('#settingsLinks #openWebsite').count(),1);
   assert.equal(await page.locator('#settingsLinks #openRepository').count(),1);
+  assert.equal(await page.locator('#settingsLinks #openReleaseNotes').count(),1);
+  assert.equal(await page.locator('#loginState').count(),1);
+  assert.equal(await page.locator('#refreshLogin').count(),1);
   await app.evaluate(({shell}) => {
     globalThis.originalExternalOpen = shell.openExternal;
     globalThis.openedExternalLinks = [];
